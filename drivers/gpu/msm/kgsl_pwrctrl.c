@@ -764,6 +764,7 @@ static ssize_t thermal_pwrlevel_store(struct device *dev,
 				struct device_attribute *attr,
 				 const char *buf, size_t count)
 {
+#if 0
 	struct kgsl_device *device = dev_get_drvdata(dev);
 	struct kgsl_pwrctrl *pwr = &device->pwrctrl;
 	int ret;
@@ -787,7 +788,7 @@ static ssize_t thermal_pwrlevel_store(struct device *dev,
 		kgsl_pwrctrl_pwrlevel_change(device, pwr->active_pwrlevel);
 		mutex_unlock(&device->mutex);
 	}
-
+#endif
 	return count;
 }
 
