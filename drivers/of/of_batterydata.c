@@ -314,6 +314,9 @@ struct device_node *of_batterydata_get_best_profile(
 {
 	struct batt_ids batt_ids;
 	struct device_node *node, *best_node = NULL;
+#ifdef CONFIG_MACH_XIAOMI_PLATINA
+	struct device_node *generic_node = NULL;
+#endif
 	const char *battery_type = NULL;
 	int delta = 0, best_delta = 0, best_id_kohm = 0, id_range_pct,
 		i = 0, rc = 0, limit = 0;
@@ -367,11 +370,24 @@ struct device_node *of_batterydata_get_best_profile(
 				}
 			}
 		}
+#ifdef CONFIG_MACH_XIAOMI_PLATINA
+		rc = of_property_read_string(node, "qcom,battery-type",
+							&battery_type);
+		if (!rc && strcmp(battery_type, "itech_3000mah") == 0)
+			generic_node = node;
+#endif
 	}
 
 	if (best_node == NULL) {
+#ifdef CONFIG_MACH_XIAOMI_PLATINA
+		/* now that best_node is null, there is no need to
+		 * check whether generic node is null. */
+		best_node = generic_node;
+		pr_err("No battery data found, use generic one\n");
+#else
 		pr_err("No battery data found\n");
 		return best_node;
+#endif
 	}
 
 	/* check that profile id is in range of the measured batt_id */
