@@ -39,3 +39,4 @@ obj-$(CONFIG_IR_SUNXI) += sunxi-cir.o
 obj-$(CONFIG_IR_IMG) += img-ir/
 # peelir using spi
 obj-$(CONFIG_SPI_PEELIR) += peelir.o
+obj-$(CONFIG_IR_SPI) += ir-spi.o
