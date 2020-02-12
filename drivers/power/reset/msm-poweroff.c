@@ -500,7 +500,9 @@ static void msm_restart_prepare(const char *cmd)
 		qpnp_pon_system_pwr_off(PON_POWER_OFF_HARD_RESET);
 
 	if (in_panic) {
+#ifdef CONFIG_MACH_LONGCHEER
 		qpnp_pon_set_restart_reason(PON_RESTART_REASON_PANIC);
+#endif
 		qpnp_pon_system_pwr_off(PON_POWER_OFF_WARM_RESET);
 	} else if (cmd != NULL) {
 		if (!strncmp(cmd, "bootloader", 10)) {
@@ -543,11 +545,15 @@ static void msm_restart_prepare(const char *cmd)
 			else
 				pr_notice("This command already been disabled\n");
 		} else {
+#ifdef CONFIG_MACH_LONGCHEER
 			qpnp_pon_set_restart_reason(PON_RESTART_REASON_NORMAL);
+#endif
 			__raw_writel(0x77665501, restart_reason);
 		}
 	} else {
+#ifdef CONFIG_MACH_LONGCHEER
 		qpnp_pon_set_restart_reason(PON_RESTART_REASON_NORMAL);
+#endif
 		__raw_writel(0x77665501, restart_reason);
 	}
 
