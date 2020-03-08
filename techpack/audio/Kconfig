@@ -172,5 +172,7 @@ config SND_SOC_MAX98937
 	tristate "maxim Instruments 98937 SmartAmp(R)"
 config ELLIPTICLABS
 	tristate "Elliptic Labs fake proximity sensor support"
+config SND_SOC_USB_HEADSET
+	tristate "Xiaomi USB analog headset driver"
 
 endmenu
