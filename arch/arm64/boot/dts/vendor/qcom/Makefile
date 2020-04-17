@@ -249,8 +249,10 @@ dtb-$(CONFIG_MACH_XIAOMI_PLATINA) := sdm660-mtp-platina.dtb
 dtb-$(CONFIG_MACH_XIAOMI_TULIP) := sdm636-mtp-tulip.dtb
 dtb-$(CONFIG_MACH_XIAOMI_WAYNE) := sdm660-mtp-wayne.dtb sdm660-mtp-jasmine.dtb
 dtb-$(CONFIG_MACH_XIAOMI_WHYRED) := sdm636-mtp-whyred.dtb
-dtb-$(CONFIG_MACH_XIAOMI_CLOVER) := sdm660-mtp-clover.dtb
 endif
+endif
+ifeq ($(CONFIG_MACH_XIAOMI),y)
+dtb-$(CONFIG_MACH_XIAOMI_CLOVER) := sdm660-mtp-clover.dtb
 else
 ifeq ($(CONFIG_BUILD_ARM64_DT_OVERLAY),y)
         dtbo-$(CONFIG_ARCH_KHAJE) += \
