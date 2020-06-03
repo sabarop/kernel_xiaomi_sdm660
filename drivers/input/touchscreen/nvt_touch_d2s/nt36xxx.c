@@ -254,7 +254,7 @@ int nvt_gesture_switch(struct input_dev *dev, unsigned int type, unsigned int co
 			{
 			delay_gesture = true;
 			}
-		}  
+		}
 		NVT_LOG("choose the gesture mode yes or not/n");
 		if(value == WAKEUP_OFF){
 			NVT_LOG("disable gesture mode/n");
@@ -1028,7 +1028,7 @@ static void nvt_ts_work_func(struct work_struct *work)
 #if NVT_TOUCH_ESD_PROTECT
 	if (nvt_fw_recovery(point_data)) {
 		nvt_esd_check_enable(true);
-		goto XFER_ERROR;
+		return;
 	}
 #endif /* #if NVT_TOUCH_ESD_PROTECT */
 
