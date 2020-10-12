@@ -33,4 +33,10 @@ menu "Xiaomi board selection"
 		help
 		  Support for Xiaomi MI 6X variant
 
+	config MACH_XIAOMI_PLATINA
+		bool "Xiaomi platina board"
+		select MACH_MI
+		help
+		  Support for Xiaomi Mi 8 Lite
+
 endmenu
