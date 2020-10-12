@@ -13,6 +13,12 @@ config MACH_XIAOMI_SDM660
 	help
 	  Support for Xiaomi SDM660 devices
 
+config MACH_MI
+	bool "Mi board"
+	select MACH_XIAOMI_SDM660
+	help
+	  Support for Mi boards
+
 config MACH_LONGCHEER
 	bool "Longcheer board"
 	select MACH_XIAOMI_SDM660
@@ -42,5 +48,11 @@ config MACH_XIAOMI_WAYNE
 	select MACH_LONGCHEER
 	help
 	  Support for Xiaomi MI A2 and Mi 6X
+
+config MACH_XIAOMI_PLATINA
+	bool "Xiaomi platina board"
+	select MACH_MI
+	help
+	  Support for Xiaomi Mi 8 Lite
 
 endmenu
