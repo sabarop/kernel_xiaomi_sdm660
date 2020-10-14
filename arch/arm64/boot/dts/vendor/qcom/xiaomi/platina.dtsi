@@ -1,0 +1,2 @@
+#include "mi/mi-sdm660-common.dtsi"
+#include "mi/platina/platina-sdm660.dtsi"
