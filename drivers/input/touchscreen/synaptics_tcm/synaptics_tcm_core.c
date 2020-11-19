@@ -38,6 +38,7 @@
 #ifdef CONFIG_TOUCHSCREEN_COMMON
 #include <linux/input/tp_common.h>
 #endif
+#include <uapi/linux/sched/types.h>
 
 /* #define RESET_ON_RESUME */
 
