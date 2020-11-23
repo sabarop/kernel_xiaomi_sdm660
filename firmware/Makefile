@@ -22,6 +22,10 @@ fw-external-y := $(subst $(quote),,$(CONFIG_EXTRA_FIRMWARE))
 
 fw-shipped-$(CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_FORCE) += synaptics_jdi_3331_c8.fw \
         synaptics_jdi_3330_c8.fw synaptics_sharp_4322_c8.fw
+
+fw-shipped-$(CONFIG_TOUCHSCREEN_SYNAPTICS_TCM_D2T) += synaptics_boe_4320.fw
+fw-shipped-$(CONFIG_TOUCHSCREEN_NVT_D2T) += novatek_nt36672_d2t.fw
+
 # LAVENDER
 fw-shipped-$(CONFIG_TOUCHSCREEN_NVT_F7A) += novatek/tianma_nt36672a_miui_f7a.bin
 fw-shipped-$(CONFIG_TOUCHSCREEN_NVT_F7A) += novatek/shenchao_nt36672a_miui_f7a.bin
