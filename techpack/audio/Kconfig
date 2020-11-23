@@ -174,5 +174,8 @@ config ELLIPTICLABS
 	tristate "Elliptic Labs fake proximity sensor support"
 config SND_SOC_USB_HEADSET
 	tristate "Xiaomi USB analog headset driver"
+config SND_SOC_TFA9894
+	tristate "NXP Semiconductors TFA9894 amplifier"
+	depends on I2C
 
 endmenu
