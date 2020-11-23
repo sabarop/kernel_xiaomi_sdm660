@@ -1385,4 +1385,10 @@ source "drivers/input/touchscreen/focaltech_touch/Kconfig"
 
 source "drivers/input/touchscreen/nt36xxx/Kconfig"
 
+source "drivers/input/touchscreen/focal_ft8719_d2t/Kconfig"
+
+source "drivers/input/touchscreen/nvt_touch_d2t/Kconfig"
+
+source "drivers/input/touchscreen/synaptics_tcm_d2t/Kconfig"
+
 endif
