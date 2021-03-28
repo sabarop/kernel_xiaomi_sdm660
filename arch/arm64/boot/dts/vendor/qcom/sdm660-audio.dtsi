@@ -1,4 +1,5 @@
 #include "sdm660-wsa881x.dtsi"
+#include "sdm660-lpi.dtsi"
 
 &audio_apr {
 	q6core: qcom,q6core-audio {
@@ -12,8 +13,6 @@
 &msm_audio_ion {
 	qcom,iommu-dma-addr-pool = <0x10000000 0x10000000>;
 };
-
-#include "sdm660-lpi.dtsi"
 
 &q6core {
 	int_codec: sound {
@@ -410,7 +409,7 @@
 	};
 };
 
-&q6core {
+&soc {
 	cdc_pdm_gpios: cdc_pdm_pinctrl {
 		compatible = "qcom,msm-cdc-pinctrl";
 		pinctrl-names = "aud_active", "aud_sleep";
