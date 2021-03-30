@@ -279,7 +279,7 @@ static struct clk_alpha_pll gpll4_out_main = {
 
 static const struct freq_tbl ftbl_blsp1_qup1_i2c_apps_clk_src[] = {
 	F(19200000, P_XO, 1, 0, 0),
-	F(50000000, P_GPLL0_OUT_MAIN, 12, 0, 0),
+	F(70000000, P_GPLL0_OUT_MAIN, 12, 0, 0),
 	{ }
 };
 
@@ -296,7 +296,7 @@ static struct clk_rcg2 blsp1_qup1_i2c_apps_clk_src = {
 		.ops = &clk_rcg2_ops,
 		VDD_DIG_FMAX_MAP2(
 				LOWER, 19200000,
-				LOW, 50000000),
+				LOW, 70000000),
 	},
 };
 
@@ -307,7 +307,7 @@ static const struct freq_tbl ftbl_blsp1_qup1_spi_apps_clk_src[] = {
 	F(15000000, P_GPLL0_OUT_MAIN, 10, 1, 4),
 	F(19200000, P_XO, 1, 0, 0),
 	F(25000000, P_GPLL0_OUT_MAIN, 12, 1, 2),
-	F(50000000, P_GPLL0_OUT_MAIN, 12, 0, 0),
+	F(70000000, P_GPLL0_OUT_MAIN, 12, 0, 0),
 	{ }
 };
 
@@ -325,7 +325,7 @@ static struct clk_rcg2 blsp1_qup1_spi_apps_clk_src = {
 		VDD_DIG_FMAX_MAP3(
 				LOWER, 19200000,
 				LOW, 25000000,
-				NOMINAL, 50000000),
+				NOMINAL, 70000000),
 	},
 };
 
@@ -342,7 +342,7 @@ static struct clk_rcg2 blsp1_qup2_i2c_apps_clk_src = {
 		.ops = &clk_rcg2_ops,
 		VDD_DIG_FMAX_MAP2(
 				LOWER, 19200000,
-				LOW, 50000000),
+				LOW, 70000000),
 	},
 };
 
@@ -360,7 +360,7 @@ static struct clk_rcg2 blsp1_qup2_spi_apps_clk_src = {
 		VDD_DIG_FMAX_MAP3(
 				LOWER, 19200000,
 				LOW, 25000000,
-				NOMINAL, 50000000),
+				NOMINAL, 70000000),
 	},
 };
 
@@ -377,7 +377,7 @@ static struct clk_rcg2 blsp1_qup3_i2c_apps_clk_src = {
 		.ops = &clk_rcg2_ops,
 		VDD_DIG_FMAX_MAP2(
 				LOWER, 19200000,
-				LOW, 50000000),
+				LOW, 70000000),
 	},
 };
 
@@ -395,7 +395,7 @@ static struct clk_rcg2 blsp1_qup3_spi_apps_clk_src = {
 		VDD_DIG_FMAX_MAP3(
 				LOWER, 19200000,
 				LOW, 25000000,
-				NOMINAL, 50000000),
+				NOMINAL, 70000000),
 	},
 };
 
@@ -412,7 +412,7 @@ static struct clk_rcg2 blsp1_qup4_i2c_apps_clk_src = {
 		.ops = &clk_rcg2_ops,
 		VDD_DIG_FMAX_MAP2(
 				LOWER, 19200000,
-				LOW, 50000000),
+				LOW, 70000000),
 	},
 };
 
@@ -430,7 +430,7 @@ static struct clk_rcg2 blsp1_qup4_spi_apps_clk_src = {
 		VDD_DIG_FMAX_MAP3(
 				LOWER, 19200000,
 				LOW, 25000000,
-				NOMINAL, 50000000),
+				NOMINAL, 70000000),
 	},
 };
 
@@ -502,7 +502,7 @@ static struct clk_rcg2 blsp2_qup1_i2c_apps_clk_src = {
 		.ops = &clk_rcg2_ops,
 		VDD_DIG_FMAX_MAP2(
 				LOWER, 19200000,
-				LOW, 50000000),
+				LOW, 70000000),
 	},
 };
 
@@ -520,7 +520,7 @@ static struct clk_rcg2 blsp2_qup1_spi_apps_clk_src = {
 		VDD_DIG_FMAX_MAP3(
 				LOWER, 19200000,
 				LOW, 25000000,
-				NOMINAL, 50000000),
+				NOMINAL, 70000000),
 	},
 };
 
@@ -537,7 +537,7 @@ static struct clk_rcg2 blsp2_qup2_i2c_apps_clk_src = {
 		.ops = &clk_rcg2_ops,
 		VDD_DIG_FMAX_MAP2(
 				LOWER, 19200000,
-				LOW, 50000000),
+				LOW, 70000000),
 	},
 };
 
@@ -555,7 +555,7 @@ static struct clk_rcg2 blsp2_qup2_spi_apps_clk_src = {
 		VDD_DIG_FMAX_MAP3(
 				LOWER, 19200000,
 				LOW, 25000000,
-				NOMINAL, 50000000),
+				NOMINAL, 70000000),
 	},
 };
 
@@ -572,7 +572,7 @@ static struct clk_rcg2 blsp2_qup3_i2c_apps_clk_src = {
 		.ops = &clk_rcg2_ops,
 		VDD_DIG_FMAX_MAP2(
 				LOWER, 19200000,
-				LOW, 50000000),
+				LOW, 70000000),
 	},
 };
 
@@ -590,7 +590,7 @@ static struct clk_rcg2 blsp2_qup3_spi_apps_clk_src = {
 		VDD_DIG_FMAX_MAP3(
 				LOWER, 19200000,
 				LOW, 25000000,
-				NOMINAL, 50000000),
+				NOMINAL, 70000000),
 	},
 };
 
@@ -607,7 +607,7 @@ static struct clk_rcg2 blsp2_qup4_i2c_apps_clk_src = {
 		.ops = &clk_rcg2_ops,
 		VDD_DIG_FMAX_MAP2(
 				LOWER, 19200000,
-				LOW, 50000000),
+				LOW, 70000000),
 	},
 };
 
@@ -625,7 +625,7 @@ static struct clk_rcg2 blsp2_qup4_spi_apps_clk_src = {
 		VDD_DIG_FMAX_MAP3(
 				LOWER, 19200000,
 				LOW, 25000000,
-				NOMINAL, 50000000),
+				NOMINAL, 70000000),
 	},
 };
 
