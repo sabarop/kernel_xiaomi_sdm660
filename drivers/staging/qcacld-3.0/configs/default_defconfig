@@ -62,7 +62,7 @@ endif
 endif
 
 # Make WLAN as open-source driver by default
-WLAN_OPEN_SOURCE := y
+WLAN_OPEN_SOURCE := n
 
 ifeq (y,$(findstring y,$(CONFIG_ICNSS) $(CONFIG_ICNSS_MODULE)))
 	CONFIG_HELIUMPLUS := y
@@ -304,7 +304,7 @@ ifeq (y,$(findstring y,$(CONFIG_ICNSS) $(CONFIG_ICNSS_MODULE)))
 CONFIG_WIFI_3_0_ADRASTEA := y
 CONFIG_ADRASTEA_RRI_ON_DDR := y
 # Enable athdiag procfs debug support for adrastea
-CONFIG_ATH_PROCFS_DIAG_SUPPORT := y
+CONFIG_ATH_PROCFS_DIAG_SUPPORT := n
 # Enable 11AC TX compact feature for adrastea
 CONFIG_ATH_11AC_TXCOMPACT := y
 ifeq ($(CONFIG_QMI_SUPPORT), y)
