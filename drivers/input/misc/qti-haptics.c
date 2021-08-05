@@ -30,6 +30,7 @@
 #include <linux/slab.h>
 #include <linux/types.h>
 #include <linux/uaccess.h>
+#include <linux/delay.h>
 
 enum actutor_type {
 	ACT_LRA,
@@ -1259,7 +1260,7 @@ static int twm_notifier_cb(struct notifier_block *nb,
 static int qti_haptics_parse_dt(struct qti_hap_chip *chip)
 {
 	struct qti_hap_config *config = &chip->config;
-	const struct device_node *node = chip->dev->of_node;
+	struct device_node *node = chip->dev->of_node;
 	struct device_node *child_node;
 	struct qti_hap_effect *effect;
 	const char *str;
