@@ -121,7 +121,7 @@
 &pm660l_wled {
 	/delete-property/ qcom,auto-calibration;
 	qcom,en-cabc;
-	qcom,fs-current-limit = <20000>;
+	qcom,fs-current-limit = <18000>;
 	qcom,string-cfg = <3>;
 };
 
