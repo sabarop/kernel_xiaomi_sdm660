@@ -602,6 +602,7 @@ static void __init clean_rootfs(void)
 
 static int __initdata do_skip_initramfs;
 
+#if 0
 static int __init skip_initramfs_param(char *str)
 {
 	if (*str)
@@ -610,6 +611,7 @@ static int __init skip_initramfs_param(char *str)
 	return 1;
 }
 __setup("skip_initramfs", skip_initramfs_param);
+#endif
 
 static int __init populate_rootfs(void)
 {
