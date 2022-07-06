@@ -63,6 +63,8 @@
 #define MAX_LANE_COUNT 4
 #ifdef CONFIG_MACH_LONGCHEER
 #define CSID_TIMEOUT msecs_to_jiffies(800)
+#elif defined(CONFIG_MACH_XIAOMI_CLOVER)
+#define CSID_TIMEOUT msecs_to_jiffies(500)
 #else
 #define CSID_TIMEOUT msecs_to_jiffies(100)
 #endif
