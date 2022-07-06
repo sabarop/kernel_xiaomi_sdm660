@@ -465,4 +465,16 @@ config ARCH_ZYNQMP
 	help
 	  This enables support for Xilinx ZynqMP Family
 
+config MACH_XIAOMI
+	bool "Xiaomi Family"
+	depends on ARCH_QCOM
+	help
+	  This enables support for Xiaomi Family
+
+config MACH_XIAOMI_CLOVER
+	bool "Clover Platform"
+	select MACH_XIAOMI
+	help
+	  This enables support for Xiaomi Mi Pad 4 Family
+
 endmenu
