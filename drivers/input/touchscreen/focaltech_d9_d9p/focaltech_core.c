@@ -41,6 +41,8 @@
 #define FTS_SUSPEND_LEVEL 1 /* Early-suspend level */
 #endif
 
+#include "focaltech_gesture.c"
+
 #if FTS_LOCK_DOWN_INFO_EN
 char tp_lockdown_info[30];
 #endif
