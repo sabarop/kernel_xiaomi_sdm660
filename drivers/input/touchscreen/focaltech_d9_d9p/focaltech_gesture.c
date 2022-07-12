@@ -30,11 +30,6 @@
  *
  *****************************************************************************/
 
-/*****************************************************************************
- * 1.Included header files
- *****************************************************************************/
-#include "focaltech_core.h"
-#if FTS_GESTURE_EN
 /******************************************************************************
  * Private constant and macro definitions using #define
  *****************************************************************************/
@@ -89,8 +84,7 @@ struct fts_gesture_st
 	u8 header[FTS_GESTRUE_POINTS_HEADER];
 	u16 coordinate_x[FTS_GESTRUE_POINTS];
 	u16 coordinate_y[FTS_GESTRUE_POINTS];
-	u8 mode;   /*host driver enable gesture flag */
-	u8 active; /*gesture actutally work */
+	bool enabled; /*host driver enable gesture flag */
 };
 
 /*****************************************************************************
@@ -148,7 +142,7 @@ static ssize_t fts_gesture_show(struct device *dev, struct device_attribute *att
 
 	mutex_lock(&input_dev->mutex);
 	fts_i2c_read_reg(client, FTS_REG_GESTURE_EN, &val);
-	count = snprintf(buf, PAGE_SIZE, "Gesture Mode: %s\n", fts_gesture_data.mode ? "On" : "Off");
+	count = snprintf(buf, PAGE_SIZE, "Gesture Mode: %s\n", fts_gesture_data.enabled ? "On" : "Off");
 	count += snprintf(buf + count, PAGE_SIZE, "Reg(0xD0) = %d\n", val);
 	mutex_unlock(&input_dev->mutex);
 
@@ -169,31 +163,14 @@ static ssize_t fts_gesture_store(struct device *dev, struct device_attribute *at
 	mutex_lock(&input_dev->mutex);
 	if (FTS_SYSFS_ECHO_ON(buf)) {
 		FTS_INFO("[GESTURE]enable gesture");
-		fts_gesture_data.mode = ENABLE;
+		fts_gesture_data.enabled = true;
 	} else if (FTS_SYSFS_ECHO_OFF(buf)) {
 		FTS_INFO("[GESTURE]disable gesture");
-		fts_gesture_data.mode = DISABLE;
+		fts_gesture_data.enabled = false;
 	}
 	mutex_unlock(&input_dev->mutex);
 
 	return count;
-}
-
-void fts_gesture_enable(bool enable)
-{
-	struct input_dev *input_dev = fts_data->input_dev;
-
-	mutex_lock(&input_dev->mutex);
-
-	if (enable) {
-		FTS_INFO("[GESTURE]enable gesture");
-		fts_gesture_data.mode = ENABLE;
-	} else {
-		FTS_INFO("[GESTURE]disable gesture");
-		fts_gesture_data.mode = DISABLE;
-	}
-
-	mutex_unlock(&input_dev->mutex);
 }
 
 /************************************************************************
@@ -246,7 +223,7 @@ static ssize_t fts_gesture_buf_store(struct device *dev, struct device_attribute
  * Output:
  * Return: 0-success or others-error
  *****************************************************************************/
-int fts_create_gesture_sysfs(struct i2c_client *client)
+static int fts_create_gesture_sysfs(struct i2c_client *client)
 {
 	int ret = 0;
 
@@ -370,7 +347,7 @@ static int fts_gesture_read_buffer(struct i2c_client *client, u8 *buf, int read_
  * Output:
  * Return: return 0 if succuss, otherwise reture error code
  ***********************************************************************/
-int fts_gesture_readdata(struct fts_ts_data *ts_data)
+static inline int fts_gesture_readdata(struct fts_ts_data *ts_data)
 {
 	u8 buf[FTS_GESTRUE_POINTS * 4] = {0};
 	int ret = 0;
@@ -436,9 +413,9 @@ int fts_gesture_readdata(struct fts_ts_data *ts_data)
  * Output:
  * Return:
  *****************************************************************************/
-void fts_gesture_recovery(struct i2c_client *client)
+static inline void fts_gesture_recovery(struct i2c_client *client)
 {
-	if ((ENABLE == fts_gesture_data.mode) && (ENABLE == fts_gesture_data.active)) {
+	if (fts_gesture_data.enabled) {
 		FTS_INFO("enter fts_gesture_recovery");
 		fts_i2c_write_reg(client, 0xD1, 0xff);
 		fts_i2c_write_reg(client, 0xD2, 0xff);
@@ -457,14 +434,14 @@ void fts_gesture_recovery(struct i2c_client *client)
  * Output:
  * Return: return 0 if succuss, otherwise return error code
  *****************************************************************************/
-int fts_gesture_suspend(struct i2c_client *client)
+static inline int fts_gesture_suspend(struct i2c_client *client)
 {
 	int i;
 	u8 state;
 
 	FTS_INFO("gesture suspend...");
 	/* gesture not enable, return immediately */
-	if (fts_gesture_data.mode == DISABLE) {
+	if (!fts_gesture_data.enabled) {
 		FTS_INFO("gesture is disabled");
 		return -EINVAL;
 	}
@@ -485,11 +462,14 @@ int fts_gesture_suspend(struct i2c_client *client)
 
 	if (i >= 5) {
 		FTS_ERROR("[GESTURE]Enter into gesture(suspend) failed!\n");
-		fts_gesture_data.active = DISABLE;
+		fts_gesture_data.enabled = false;
 		return -EIO;
 	}
 
-	fts_gesture_data.active = ENABLE;
+	// System should be able to handle interrupts from fts if gesture's enabled
+	enable_irq_wake(client->irq);
+
+	fts_gesture_data.enabled = true;
 	FTS_INFO("[GESTURE]Enter into gesture(suspend) successfully!");
 	FTS_FUNC_EXIT();
 	return 0;
@@ -502,24 +482,18 @@ int fts_gesture_suspend(struct i2c_client *client)
  * Output:
  * Return: return 0 if succuss, otherwise return error code
  *****************************************************************************/
-int fts_gesture_resume(struct i2c_client *client)
+static inline int fts_gesture_resume(struct i2c_client *client)
 {
 	int i;
 	u8 state;
 
 	FTS_INFO("gesture resume...");
 	/* gesture not enable, return immediately */
-	if (fts_gesture_data.mode == DISABLE) {
+	if (!fts_gesture_data.enabled) {
 		FTS_DEBUG("gesture is disabled");
 		return -EINVAL;
 	}
 
-	if (fts_gesture_data.active == DISABLE) {
-		FTS_DEBUG("gesture in suspend is failed, no running fts_gesture_resume");
-		return -EINVAL;
-	}
-
-	fts_gesture_data.active = DISABLE;
 	for (i = 0; i < 5; i++) {
 		fts_i2c_write_reg(client, FTS_REG_GESTURE_EN, DISABLE);
 		msleep(1);
@@ -533,6 +507,9 @@ int fts_gesture_resume(struct i2c_client *client)
 		return -EIO;
 	}
 
+	// System should be able to handle interrupts from fts if gesture's enabled
+	disable_irq_wake(client->irq);
+
 	FTS_INFO("[GESTURE]resume from gesture successfully!");
 	FTS_FUNC_EXIT();
 	return 0;
@@ -545,7 +522,7 @@ int fts_gesture_resume(struct i2c_client *client)
  * Output:
  * Return:
  *****************************************************************************/
-int fts_gesture_init(struct fts_ts_data *ts_data)
+static int fts_gesture_init(struct fts_ts_data *ts_data)
 {
 	struct i2c_client *client = ts_data->client;
 	struct input_dev *input_dev = ts_data->input_dev;
@@ -583,25 +560,8 @@ int fts_gesture_init(struct fts_ts_data *ts_data)
 	__set_bit(KEY_GESTURE_Z, input_dev->keybit);
 
 	fts_create_gesture_sysfs(client);
-	fts_gesture_data.mode = DISABLE;
-	fts_gesture_data.active = DISABLE;
+	fts_gesture_data.enabled = false;
 
 	FTS_FUNC_EXIT();
 	return 0;
 }
-
-/************************************************************************
- *   Name: fts_gesture_exit
- *  Brief: call when driver removed
- *  Input:
- * Output:
- * Return:
- ***********************************************************************/
-int fts_gesture_exit(struct i2c_client *client)
-{
-	FTS_FUNC_ENTER();
-	sysfs_remove_group(&client->dev.kobj, &fts_gesture_group);
-	FTS_FUNC_EXIT();
-	return 0;
-}
-#endif
