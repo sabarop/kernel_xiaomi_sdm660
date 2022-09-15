@@ -26,6 +26,7 @@
 			console-size = <0x200000>;
 			pmsg-size = <0x200000>;
 			status = "ok";
+			max-reason = <0x4>;
 		};
 	};
 };
