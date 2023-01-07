@@ -341,6 +341,9 @@ struct fg_batt_props {
 #ifdef CONFIG_MACH_MI
 	int		nom_cap_uah;
 #endif
+#ifdef CONFIG_MACH_XIAOMI_CLOVER
+	int		batt_capacity_mah;
+#endif
 	int		fastchg_curr_ma;
 	int		*therm_coeffs;
 	int		therm_ctr_offset;
