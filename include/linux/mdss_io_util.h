@@ -130,4 +130,8 @@ void mdss_fb_prim_panel_recover(void);
 int mdss_prim_panel_fb_unblank(int timeout);
 #endif
 
+#ifdef CONFIG_MACH_XIAOMI_CLOVER
+int mdss_prim_panel_fb_unblank(int timeout);
+#endif
+
 #endif /* __MDSS_IO_UTIL_H__ */
