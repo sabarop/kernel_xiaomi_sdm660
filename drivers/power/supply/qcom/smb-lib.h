@@ -326,6 +326,9 @@ struct smb_charger {
 
 	/* votables */
 	struct votable		*dc_suspend_votable;
+#ifdef CONFIG_MACH_XIAOMI_CLOVER
+	struct votable		*usb_suspend_votable;
+#endif
 	struct votable		*fcc_votable;
 	struct votable		*fv_votable;
 	struct votable		*usb_icl_votable;
@@ -366,6 +369,10 @@ struct smb_charger {
 	struct delayed_work	monitor_boost_charge_work;
 	struct delayed_work     charger_type_recheck;
 	struct delayed_work	check_vbus_work;
+#endif
+#ifdef CONFIG_MACH_XIAOMI_CLOVER
+	struct delayed_work	update_current_work;
+	struct delayed_work	typec_disable_cmd_work;
 #endif
 
 	/* cached status */
@@ -553,6 +560,14 @@ int smblib_get_prop_system_temp_level(struct smb_charger *chg,
 				union power_supply_propval *val);
 int smblib_get_prop_system_temp_level_max(struct smb_charger *chg,
 				union power_supply_propval *val);
+#ifdef CONFIG_MACH_XIAOMI_CLOVER
+int smblib_get_prop_batt_voltage_now(struct smb_charger *chg,
+				union power_supply_propval *val);
+int smblib_get_prop_batt_current_now(struct smb_charger *chg,
+				union power_supply_propval *val);
+int smblib_get_prop_batt_charge_full_design(struct smb_charger *chg,
+				union power_supply_propval *val);
+#endif
 int smblib_get_prop_input_current_limited(struct smb_charger *chg,
 				union power_supply_propval *val);
 #ifdef CONFIG_MACH_XIAOMI_PLATINA
@@ -690,5 +705,10 @@ int smblib_deinit(struct smb_charger *chg);
 #ifdef CONFIG_MACH_XIAOMI_PLATINA
 /* this function is used for rapid plug in/out charger to notify policy engine to update typec mode */
 extern void notify_typec_mode_changed_for_pd(void);
+#endif
+#ifdef CONFIG_MACH_XIAOMI_CLOVER
+int smblib_get_prop_batt_resistance_id(struct smb_charger *chg,
+				     union power_supply_propval *val);
+int smblib_get_chg_otg_present(struct smb_charger *chg,union power_supply_propval *val);
 #endif
 #endif /* __SMB2_CHARGER_H */
