@@ -537,7 +537,7 @@ struct fb_info {
 	} *apertures;
 
 	bool skip_vt_switch; /* no VT switch on suspend/resume required */
-#if defined(CONFIG_MACH_LONGCHEER) || defined(CONFIG_MACH_XIAOMI_PLATINA)
+#if defined(CONFIG_MACH_LONGCHEER) || defined(CONFIG_MACH_XIAOMI_PLATINA) || defined(CONFIG_MACH_XIAOMI_CLOVER)
 	int blank;
 #endif
 };
