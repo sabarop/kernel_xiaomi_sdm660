@@ -31,6 +31,7 @@
 #include <linux/module.h>
 #include <linux/moduleparam.h>
 #include <linux/platform_device.h>
+#include <linux/slab.h>
 #include <linux/types.h>
 #include <linux/uaccess.h>
 
@@ -94,7 +95,7 @@ static int tiload_release(struct inode *in, struct file *filp)
 static ssize_t tiload_read(struct file *filp, char __user *buf, size_t count, loff_t *offset)
 {
 	struct tas2557_priv *pTAS2557 = (struct tas2557_priv *)filp->private_data;
-	static char rd_data[MAX_LENGTH + 1];
+	char *rd_data;
 	unsigned int nCompositeRegister = 0, Value = 0;
 	char reg_addr;
 	size_t size;
@@ -115,6 +116,13 @@ static ssize_t tiload_read(struct file *filp, char __user *buf, size_t count, lo
 
 	size = count;
 
+	rd_data = kmalloc(MAX_LENGTH + 1, GFP_KERNEL | GFP_DMA);
+
+	if (rd_data == NULL) {
+		dev_err(pTAS2557->dev, "kmalloc fail \n");
+		return -EINVAL;
+	}
+
 	nCompositeRegister = BPR_REG(gBook, gPage, reg_addr);
 	if (count == 1) {
 		ret = pTAS2557->read(pTAS2557, pTAS2557->mnCurrentChannel, 0x80000000 | nCompositeRegister,
@@ -134,9 +142,11 @@ static ssize_t tiload_read(struct file *filp, char __user *buf, size_t count, lo
 
 	if (copy_to_user(buf, rd_data, size) != 0) {
 		dev_err(pTAS2557->dev, "copy_to_user failed\n");
+		kfree(rd_data);
 		return -EINVAL;
 	}
 
+	kfree(rd_data);
 	return size;
 }
 
@@ -151,8 +161,8 @@ static ssize_t tiload_write(struct file *filp, const char __user *buf, size_t co
 							loff_t *offset)
 {
 	struct tas2557_priv *pTAS2557 = (struct tas2557_priv *)filp->private_data;
-	static char wr_data[MAX_LENGTH + 1];
-	char *pData = wr_data;
+	char *wr_data;
+	char *pData;
 	size_t size;
 	unsigned int nCompositeRegister = 0;
 	unsigned int nRegister;
@@ -164,16 +174,25 @@ static ssize_t tiload_write(struct file *filp, const char __user *buf, size_t co
 		return -EINVAL;
 	}
 
+	wr_data = kmalloc(MAX_LENGTH + 1, GFP_KERNEL | GFP_DMA);
+	if (wr_data == NULL) {
+		dev_err(pTAS2557->dev, "kmalloc fail \n");
+		return -EINVAL;
+	}
+	pData = wr_data;
+
 	/* copy buffer from user space  */
 	size = copy_from_user(wr_data, buf, count);
 	if (size != 0) {
 		dev_err(pTAS2557->dev, "copy_from_user failure %d\n", (int)size);
+		kfree(wr_data);
 		return -EINVAL;
 	}
 	nRegister = wr_data[0];
 	size = count;
 	if ((nRegister == 127) && (gPage == 0)) {
 		gBook = wr_data[1];
+		kfree(wr_data);
 		return size;
 	}
 
@@ -196,6 +215,7 @@ static ssize_t tiload_write(struct file *filp, const char __user *buf, size_t co
 		dev_err(pTAS2557->dev, "%s, %d, ret=%d, count=%zu, ERROR Happen\n", __func__, __LINE__, ret,
 				count);
 
+	kfree(wr_data);
 	return size;
 }
 
