@@ -556,7 +556,7 @@ static void __init mm_init(void)
 	pti_init();
 }
 
-#ifdef CONFIG_MACH_LONGCHEER
+#if defined(CONFIG_MACH_LONGCHEER) || defined(CONFIG_MACH_XIAOMI_PLATINA)
 #ifdef CONFIG_MACH_XIAOMI_TULIP
 int fts_touch = 1;
 #endif
@@ -599,7 +599,7 @@ asmlinkage __visible void __init start_kernel(void)
 	/* parameters may set static keys */
 	jump_label_init();
 
-#ifdef CONFIG_MACH_LONGCHEER
+#if defined(CONFIG_MACH_LONGCHEER) || defined(CONFIG_MACH_XIAOMI_PLATINA)
 #ifdef CONFIG_MACH_XIAOMI_TULIP
 	if (strstr(boot_command_line, "qcom,mdss_dsi_ft8719_e7t_boe_fhdplus_video"))
 		fts_touch = 1;
