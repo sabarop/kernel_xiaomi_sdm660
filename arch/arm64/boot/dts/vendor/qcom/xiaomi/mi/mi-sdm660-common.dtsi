@@ -281,7 +281,6 @@
 	chan@4d {
 		label = "cam_therm0";
 		reg = <0x4d>;
-		qcom,decimation = <2>;
 		qcom,pre-div-channel-scaling = <0>;
 		qcom,calibration-type = "ratiometric";
 		qcom,scale-function = <2>;
@@ -292,7 +291,6 @@
 	chan@4e {
 		label = "cam_therm1";
 		reg = <0x4e>;
-		qcom,decimation = <2>;
 		qcom,pre-div-channel-scaling = <0>;
 		qcom,calibration-type = "ratiometric";
 		qcom,scale-function = <2>;
@@ -303,7 +301,6 @@
 	chan@4f {
 		label = "pa_therm0";
 		reg = <0x4f>;
-		qcom,decimation = <2>;
 		qcom,pre-div-channel-scaling = <0>;
 		qcom,calibration-type = "ratiometric";
 		qcom,scale-function = <2>;
@@ -314,7 +311,6 @@
 	chan@50 {
 		label = "pa_therm1";
 		reg = <0x50>;
-		qcom,decimation = <2>;
 		qcom,pre-div-channel-scaling = <0>;
 		qcom,calibration-type = "ratiometric";
 		qcom,scale-function = <2>;
@@ -325,7 +321,6 @@
 	chan@54 {
 		label = "backlight_therm";
 		reg = <0x54>;
-		qcom,decimation = <2>;
 		qcom,pre-div-channel-scaling = <0>;
 		qcom,calibration-type = "absolute";
 		qcom,scale-function = <2>;
