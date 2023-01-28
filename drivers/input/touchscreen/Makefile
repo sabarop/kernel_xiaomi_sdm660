@@ -125,4 +125,6 @@ obj-$(CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_E7S)	+= synaptics_dsx_e7s/
 obj-$(CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_FORCE) += synaptics_dsx_force/
 obj-$(CONFIG_TOUCHSCREEN_SYNAPTICS_TCM_D2T) += synaptics_tcm_d2t/
 obj-$(CONFIG_TOUCHSCREEN_SYNAPTICS_TCM_F7A) += synaptics_tcm_f7a/
+obj-$(CONFIG_TOUCHSCREEN_FOCALTECH_D9_D9P)	+= focaltech_d9_d9p/
+obj-$(CONFIG_TOUCHSCREEN_GT9XX_ZQL6019)	+= gt9xx_zql6019/
 obj-$(CONFIG_TOUCHSCREEN_COMMON)	+= tp_common.o
