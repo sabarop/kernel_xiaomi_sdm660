@@ -427,7 +427,7 @@ int fg_write(struct fg_chip *chip, int addr, u8 *val, int len)
 	sec_access = (addr & 0x00FF) > 0xD0;
 #endif
 #else
-	sec_access = (addr & 0x00FF) >= 0xBA;
+	sec_access = (addr & 0x00FF) > 0xB8;
 #endif
 	if (sec_access) {
 		rc = regmap_write(chip->regmap, (addr & 0xFF00) | 0xD0, 0xA5);
