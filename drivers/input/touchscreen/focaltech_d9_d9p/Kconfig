@@ -1,0 +1,16 @@
+#
+# Focaltech Touchscreen driver configuration
+#
+
+config TOUCHSCREEN_FTS_D9_D9P
+	bool "Focaltech Touchscreen"
+	depends on I2C
+	default y
+	help
+	  Say Y here if you have Focaltech touch panel.
+	  If unsure, say N.
+
+config TOUCHSCREEN_FTS_DIRECTORY_D9_D9P
+	string "Focaltech ts directory name"
+	default "focaltech_d9_d9p"
+	depends on TOUCHSCREEN_FTS_D9_D9P
