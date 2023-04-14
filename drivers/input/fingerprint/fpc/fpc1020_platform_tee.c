@@ -95,9 +95,9 @@ struct fpc1020_data {
 	struct regulator *vreg[ARRAY_SIZE(vreg_conf)];
 
 #ifdef CONFIG_MACH_XIAOMI_CLOVER
-	struct wakeup_source ttw_wl;
+	struct wakeup_source* ttw_wl;
 #else
-	struct wakeup_source ttw_ws;
+	struct wakeup_source* ttw_ws;
 #endif
 	int irq_gpio;
 	int rst_gpio;
@@ -638,9 +638,9 @@ static irqreturn_t fpc1020_irq_handler(int irq, void *handle)
 
 	if (atomic_read(&fpc1020->wakeup_enabled)) {
 #ifdef CONFIG_MACH_XIAOMI_CLOVER
-		__pm_wakeup_event(&fpc1020->ttw_wl, FPC_TTW_HOLD_TIME);
+		__pm_wakeup_event(fpc1020->ttw_wl, FPC_TTW_HOLD_TIME);
 #else
-		__pm_wakeup_event(&fpc1020->ttw_ws, FPC_TTW_HOLD_TIME);
+		__pm_wakeup_event(fpc1020->ttw_ws, FPC_TTW_HOLD_TIME);
 #endif
 	}
 
@@ -817,9 +817,9 @@ static int fpc1020_probe(struct platform_device *pdev)
 #endif
 
 #ifdef CONFIG_MACH_XIAOMI_CLOVER
-	wakeup_source_init(&fpc1020->ttw_wl, "fpc_ttw_wl");
+	fpc1020->ttw_wl = wakeup_source_register(NULL, "fpc_ttw_wl");
 #else
-	wakeup_source_init(&fpc1020->ttw_ws, "fpc_ttw_ws");
+	fpc1020->ttw_ws = wakeup_source_register(NULL, "fpc_ttw_ws");
 #endif
 
 	rc = sysfs_create_group(&dev->kobj, &attribute_group);
@@ -860,9 +860,9 @@ static int fpc1020_remove(struct platform_device *pdev)
 	sysfs_remove_group(&pdev->dev.kobj, &attribute_group);
 	mutex_destroy(&fpc1020->lock);
 #ifdef CONFIG_MACH_XIAOMI_CLOVER
-	wakeup_source_trash(&fpc1020->ttw_wl);
+	wakeup_source_unregister(fpc1020->ttw_wl);
 #else
-	wakeup_source_trash(&fpc1020->ttw_ws);
+	wakeup_source_unregister(fpc1020->ttw_ws);
 #endif
 	(void)vreg_setup(fpc1020, "vdd_ana", false);
 	(void)vreg_setup(fpc1020, "vdd_io", false);
