@@ -78,8 +78,8 @@ struct st_update_msg
 
 struct st_update_msg update_msg;
 
-u16 show_len;
-u16 total_len;
+static u16 show_len;
+static u16 total_len;
 
 static u8 gup_burn_fw_gwake_section(struct i2c_client *client, u8 *fw_section, u16 start_addr,
 									u32 len, u8 bank_cmd);
@@ -242,7 +242,7 @@ static u8 gup_get_ic_fw_msg(struct i2c_client *client)
 	return SUCCESS;
 }
 
-s32 gup_enter_update_mode(struct i2c_client *client)
+static s32 gup_enter_update_mode(struct i2c_client *client)
 {
 	s32 ret = -1;
 	s32 retry = 0;
@@ -300,7 +300,7 @@ s32 gup_enter_update_mode(struct i2c_client *client)
 	return ret;
 }
 
-void gup_leave_update_mode(struct i2c_client *client)
+static void gup_leave_update_mode(struct i2c_client *client)
 {
 	struct goodix_ts_data *ts = i2c_get_clientdata(client);
 
@@ -1691,7 +1691,7 @@ static int gup_update_condition_check(struct goodix_ts_data *ts)
 
 	return 0;
 }
-s32 gup_update_proc(void *dir)
+static s32 gup_update_proc(void *dir)
 {
 	s32 ret = 0;
 	s32 update_ret = FAIL;
@@ -1853,7 +1853,7 @@ file_fail:
 	}
 }
 
-u8 gup_init_update_proc(struct goodix_ts_data *ts)
+static u8 gup_init_update_proc(struct goodix_ts_data *ts)
 {
 	struct task_struct *thread = NULL;
 
