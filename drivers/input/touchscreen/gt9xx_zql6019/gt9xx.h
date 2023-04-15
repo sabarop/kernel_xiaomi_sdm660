@@ -57,19 +57,11 @@
 #define GTP_CONFIG_MAX_LENGTH 240
 #define GTP_ADDR_LENGTH 2
 
-/***************************PART1:ON/OFF define*******************************/
-#define GTP_DEBUG_ON 1
-#define GTP_DEBUG_ARRAY_ON 0
-#define GTP_DEBUG_FUNC_ON 0
-
 struct goodix_point_t
 {
 	int id;
 	int x;
 	int y;
-	int w;
-	int p;
-	int tool_type;
 };
 
 struct goodix_config_data
@@ -87,27 +79,20 @@ struct goodix_ts_platform_data
 	u32 abs_size_y;
 	u32 max_touch_id;
 	u32 max_touch_width;
-	u32 max_touch_pressure;
-	u32 key_map[MAX_KEY_NUMS];
-	u32 key_nums;
 	u32 int_sync;
 	u32 driver_send_cfg;
-	u32 swap_x2y;
 	u32 slide_wakeup;
 	u32 auto_update;
 	u32 auto_update_cfg;
 	u32 esd_protect;
-	u32 type_a_report;
 	u32 power_off_sleep;
 	u32 resume_in_workqueue;
-	u32 pen_suppress_finger;
 	struct goodix_config_data config;
 };
 
 struct goodix_ts_esd
 {
 	struct delayed_work delayed_work;
-	struct mutex mutex;
 	bool esd_on;
 };
 
@@ -154,7 +139,6 @@ struct goodix_ts_data
 	/* use pinctrl control int-pin output low or high */
 	struct goodix_pinctrl pinctrl;
 	struct hrtimer timer;
-	struct mutex lock;
 	struct notifier_block ps_notif;
 	struct regulator *vdd_ana;
 	struct regulator *vcc_i2c;
@@ -292,34 +276,8 @@ config your key info here */
 #define TRIGGER_LOC 8
 
 #define CFG_GROUP_LEN(p_cfg_grp) (sizeof(p_cfg_grp) / sizeof(p_cfg_grp[0]))
-/* Log define */
-#define GTP_DEBUG(fmt, arg...)                                         \
-	do {                                                               \
-		if (GTP_DEBUG_ON) {                                            \
-			pr_info("<<-GTP-DEBUG->> [%d]" fmt "\n", __LINE__, ##arg); \
-		}                                                              \
-	} while (0)
-#define GTP_DEBUG_ARRAY(array, num)             \
-	do {                                        \
-		s32 i;                                  \
-		u8* a = array;                          \
-		if (GTP_DEBUG_ARRAY_ON) {               \
-			pr_warn("<<-GTP-DEBUG-ARRAY->>\n"); \
-			for (i = 0; i < (num); i++) {       \
-				pr_warn("%02x  ", (a)[i]);      \
-				if ((i + 1) % 10 == 0) {        \
-					pr_warn("\n");              \
-				}                               \
-			}                                   \
-			pr_warn("\n");                      \
-		}                                       \
-	} while (0)
-#define GTP_DEBUG_FUNC()                                                      \
-	do {                                                                      \
-		if (GTP_DEBUG_FUNC_ON) {                                              \
-			pr_warn("<<-GTP-FUNC->>  Func:%s@Line:%d\n", __func__, __LINE__); \
-		}                                                                     \
-	} while (0)
+#define GTP_DEBUG pr_debug
+#define GTP_DEBUG_ARRAY(fmt, arg...) ((void)0)
 #define GTP_SWAP(x, y)   \
 	do {                 \
 		typeof(x) z = x; \
@@ -329,36 +287,35 @@ config your key info here */
 
 /******************************End of Part III********************************/
 #ifdef CONFIG_OF
-extern int gtp_parse_dt_cfg(struct device *dev, u8 *cfg, int *cfg_len, u8 sid);
+static int gtp_parse_dt_cfg(struct device *dev, u8 *cfg, int *cfg_len, u8 sid);
 #endif
 
-extern void gtp_reset_guitar(struct i2c_client *client, s32 ms);
-extern void gtp_int_sync(struct goodix_ts_data *ts, s32 ms);
-extern void gtp_esd_on(struct goodix_ts_data *ts);
-extern void gtp_esd_off(struct goodix_ts_data *ts);
-extern void gtp_work_control_enable(struct goodix_ts_data *ts, bool enable);
+static void gtp_reset_guitar(struct i2c_client *client, s32 ms);
+static void gtp_int_sync(struct goodix_ts_data *ts, s32 ms);
+static inline void gtp_esd_on(struct goodix_ts_data *ts);
+static inline void gtp_esd_off(struct goodix_ts_data *ts);
+static void gtp_work_control_enable(struct goodix_ts_data *ts, bool enable);
 
-extern u16 show_len;
-extern u16 total_len;
-extern u8 gup_init_update_proc(struct goodix_ts_data *);
-extern s32 gup_update_proc(void *dir);
-extern s32 gup_enter_update_mode(struct i2c_client *client);
-extern void gup_leave_update_mode(struct i2c_client *client);
+static u16 show_len;
+static u16 total_len;
+static u8 gup_init_update_proc(struct goodix_ts_data *);
+static s32 gup_update_proc(void *dir);
+static s32 gup_enter_update_mode(struct i2c_client *client);
+static void gup_leave_update_mode(struct i2c_client *client);
 
-extern s32 init_wr_node(struct i2c_client *);
-extern void uninit_wr_node(void);
+static s32 init_wr_node(struct i2c_client *);
+static void uninit_wr_node(void);
 
 /*********** For gt9xx_update Start *********/
-extern struct i2c_client *i2c_connect_client;
-extern void gtp_reset_guitar(struct i2c_client *client, s32 ms);
-extern void gtp_int_output(struct goodix_ts_data *ts, int level);
-extern s32 gtp_send_cfg(struct i2c_client *client);
-extern s32 gtp_get_fw_info(struct i2c_client *, struct goodix_fw_info *fw_info);
-extern s32 gtp_i2c_read_dbl_check(struct i2c_client *, u16, u8 *, int);
-extern int gtp_i2c_read(struct i2c_client *, u8 *, int);
-extern int gtp_i2c_write(struct i2c_client *, u8 *, int);
-extern s32 gtp_fw_startup(struct i2c_client *client);
-extern int gtp_ascii_to_array(const u8 *src_buf, int src_len, u8 *dst_buf);
+static struct i2c_client *i2c_connect_client;
+static void gtp_reset_guitar(struct i2c_client *client, s32 ms);
+static void gtp_int_output(struct goodix_ts_data *ts, int level);
+static s32 gtp_send_cfg(struct i2c_client *client);
+static s32 gtp_get_fw_info(struct i2c_client *, struct goodix_fw_info *fw_info);
+static s32 gtp_i2c_read_dbl_check(struct i2c_client *, u16, u8 *, int);
+static inline int gtp_i2c_read(struct i2c_client *, u8 *, int);
+static inline int gtp_i2c_write(struct i2c_client *, u8 *, int);
+static int gtp_ascii_to_array(const u8 *src_buf, int src_len, u8 *dst_buf);
 /*********** For gt9xx_update End *********/
 
 #endif /* _GOODIX_GT9XX_H_ */
