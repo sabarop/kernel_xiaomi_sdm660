@@ -52,6 +52,25 @@ static int gtp_esd_init(struct goodix_ts_data *ts);
 static void gtp_esd_check_func(struct work_struct *);
 static int gtp_init_ext_watchdog(struct i2c_client *client);
 
+#define WAKEUP_OFF 4
+#define WAKEUP_ON 5
+bool GTP_gesture_func_on = false;
+
+int gtp_gesture_switch(struct input_dev *dev, unsigned int type, unsigned int code, int value)
+{
+	unsigned int input;
+	if (type == EV_SYN && code == SYN_CONFIG) {
+		if (value == WAKEUP_OFF) {
+			GTP_gesture_func_on = false;
+			input = 0;
+		} else if (value == WAKEUP_ON) {
+			GTP_gesture_func_on = true;
+			input = 1;
+		}
+	}
+	return 0;
+}
+
 /*
  * return: 2 - ok, < 0 - i2c transfer error
  */
@@ -1285,12 +1304,36 @@ static ssize_t gtp_reset_store(struct device *dev,
 }
 static DEVICE_ATTR(reset, 0220, NULL, gtp_reset_store);
 
+static ssize_t gt9xx_enable_dt2w_show(struct device *dev, struct device_attribute *attr,
+									  char *buf)
+{
+	const char c = GTP_gesture_func_on ? '1' : '0';
+	return sprintf(buf, "%c\n", c);
+}
+
+static ssize_t gt9xx_enable_dt2w_store(struct device *dev, struct device_attribute *attr,
+									   const char *buf, size_t count)
+{
+	int i;
+
+	if (sscanf(buf, "%u", &i) == 1 && i < 2) {
+		GTP_gesture_func_on = (i == 1);
+		return count;
+	} else {
+		dev_dbg(dev, "enable_dt2w write error\n");
+		return -EINVAL;
+	}
+}
+
+static DEVICE_ATTR(enable_dt2w, (S_IRUGO | S_IWUSR | S_IWGRP), gt9xx_enable_dt2w_show, gt9xx_enable_dt2w_store);
+
 static struct attribute *gtp_attrs[] = {
 	&dev_attr_workmode.attr,
 	&dev_attr_productinfo.attr,
 	&dev_attr_dofwupdate.attr,
 	&dev_attr_drv_irq.attr,
 	&dev_attr_reset.attr,
+	&dev_attr_enable_dt2w.attr,
 	NULL
 };
 
@@ -1586,6 +1629,7 @@ static s8 gtp_request_input_dev(struct goodix_ts_data *ts)
 	ts->input_dev->id.vendor = 0xDEAD;
 	ts->input_dev->id.product = 0xBEEF;
 	ts->input_dev->id.version = 10427;
+	ts->input_dev->event = gtp_gesture_switch;
 
 	ret = input_register_device(ts->input_dev);
 	if (ret) {
@@ -1939,7 +1983,6 @@ static int gtp_probe(struct i2c_client *client, const struct i2c_device_id *id)
 	/* set parameters at here if you platform doesn't DTS */
 	pdata->rst_gpio = GTP_RST_PORT;
 	pdata->irq_gpio = GTP_INT_PORT;
-	pdata->slide_wakeup = false;
 	pdata->auto_update = true;
 	pdata->auto_update_cfg = false;
 	pdata->type_a_report = false;
@@ -2136,7 +2179,8 @@ static void gtp_suspend(struct goodix_ts_data *ts)
 
 	gtp_esd_off(ts);
 	gtp_work_control_enable(ts, false);
-	if (ts->pdata->slide_wakeup) {
+	if ((ts->pdata->slide_wakeup) && GTP_gesture_func_on) {
+		dev_info(&ts->client->dev, "gesture func on\n");
 		ret = gtp_enter_doze(ts);
 		gtp_work_control_enable(ts, true);
 	} else if (ts->pdata->power_off_sleep) {
