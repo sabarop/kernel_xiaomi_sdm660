@@ -23,6 +23,11 @@ qcom,zql6019_battery_8600mah {
 	qcom,jeita-fv-ranges = <0   100  4400000
 				101 450  4400000
 				451 600  4100000>;
+	qcom,step-chg-ranges = <0	75	2000000
+				76	85	1500000
+				86	95	1000000
+				96	100	500000>;
+	qcom,soc-based-step-chg;
 	qcom,batt-id-kohm = <200>;
 	qcom,battery-beta = <3435>;
 	qcom,fg-cc-cv-threshold-mv = <4390>;

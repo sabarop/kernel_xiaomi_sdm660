@@ -544,8 +544,16 @@
 };
 
 &pm660_charger {
-	qcom,float-voltage-mv-ntc = <4100000>;
 	qcom,fv-max-uv = <4400000>;
+	qcom,auto-recharge-soc;
+	qcom,battery-data = <&mtp_batterydata>;
+	qcom,cool-fcc-ua = <1000000>;
+	qcom,critical-low-fcc-ua = <325000>;
+	qcom,fcc-max-ua = <2000000>;
+	qcom,step-charging-enable;
+	qcom,sw-jeita-enable;
+	qcom,usb-icl-ua = <2000000>;
+	qcom,warm-fcc-ua = <1700000>;
 };
 
 &pm660_fg {
@@ -554,6 +562,10 @@
 	qcom,fg-force-load-profile;
 	qcom,fg-jeita-thresholds = <(-30) (-20) 70 75>;
 	qcom,battery-thermal-coefficients = [9d 50 ff];
+	qcom,battery-data = <&mtp_batterydata>;
+	qcom,fg-auto-recharge-soc;
+	qcom,fg-recharge-soc-thr = <98>;
+	qcom,hold-soc-while-full;
 };
 
 &pm660_gpios {
