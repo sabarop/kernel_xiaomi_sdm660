@@ -30,3 +30,10 @@ config GOODIX_FINGERPRINT
 	default n
 	help
 	add support for goodix fingerprint driver.
+
+config GOODIX_FINGERPRINT_MI
+	tristate "generic goodix fingerprint driver"
+	depends on INPUT_FINGERPRINT
+	default n
+	help
+	add support for goodix fingerprint driver.
