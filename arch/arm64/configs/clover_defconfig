@@ -2441,7 +2441,7 @@ CONFIG_I2C_MSM_V2=y
 # CONFIG_I3C is not set
 CONFIG_SPI=y
 CONFIG_SPI_MASTER=y
-# CONFIG_SPI_MEM is not set
+CONFIG_SPI_MEM=y
 
 #
 # SPI Master Controller Drivers
