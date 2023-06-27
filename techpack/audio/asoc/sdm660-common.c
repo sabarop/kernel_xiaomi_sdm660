@@ -242,8 +242,8 @@ static struct wcd_mbhc_config mbhc_cfg = {
 	.key_code[0] = KEY_MEDIA,
 #ifndef CONFIG_MACH_XIAOMI_SDM660
 #ifdef CONFIG_MACH_XIAOMI_CLOVER
-        .key_code[1] = BTN_1,
-        .key_code[2] = BTN_2,
+        .key_code[1] = KEY_VOLUMEUP,
+        .key_code[2] = KEY_VOLUMEDOWN,
         .key_code[3] = 0,
 #else
 	.key_code[1] = KEY_VOICECOMMAND,
