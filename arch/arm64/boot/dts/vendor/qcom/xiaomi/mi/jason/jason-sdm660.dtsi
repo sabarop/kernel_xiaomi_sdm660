@@ -405,7 +405,6 @@
 &firmware {
 	android {
 		/delete-node/ vbmeta;
-		/delete-node/ fstab;
 	};
 };
 

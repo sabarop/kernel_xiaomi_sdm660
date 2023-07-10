@@ -84,7 +84,6 @@
 			compatible = "android,vbmeta";
 			parts = "vbmeta,boot,system,vendor,dtbo,recovery";
 		};
-		/delete-node/ fstab;
 	};
 };
 
