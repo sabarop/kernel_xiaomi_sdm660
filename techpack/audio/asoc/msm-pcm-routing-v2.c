@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /* Copyright (c) 2012-2021, The Linux Foundation. All rights reserved.
  * Copyright (c) 2022-2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (C) 2019 XiaoMi, Inc.
  */
 
 #include <linux/init.h>
@@ -88,16 +89,16 @@ static bool is_custom_stereo_on;
 static bool is_ds2_on;
 static bool ffecns_freeze_event;
 static bool swap_ch;
-#ifdef CONFIG_MACH_MI
-static int voice_ext_ec_ref;
-static int voip_ext_ec_ref;
-#endif
 static bool hifi_filter_enabled;
 static int aanc_level;
 static int num_app_cfg_types;
 static int msm_ec_ref_port_id;
 static int afe_loopback_tx_port_index;
 static int afe_loopback_tx_port_id = -1;
+#ifdef CONFIG_MACH_MI
+static int voice_ext_ec_ref;
+static int voip_ext_ec_ref;
+#endif
 
 #define WEIGHT_0_DB 0x4000
 /* all the FEs which can support channel mixer */
@@ -5901,8 +5902,9 @@ static int msm_routing_ext_ec_get(struct snd_kcontrol *kcontrol,
 				  struct snd_ctl_elem_value *ucontrol)
 {
 #ifdef CONFIG_MACH_XIAOMI_JASON
-	struct snd_soc_dapm_widget *widget =
-		snd_soc_dapm_kcontrol_widget(kcontrol);
+	struct snd_soc_dapm_widget_list *wlist =
+						dapm_kcontrol_get_wlist(kcontrol);
+	struct snd_soc_dapm_widget *widget = wlist->widgets[0];
 #endif
 	pr_debug("%s: ext_ec_ref_rx  = %x\n", __func__, msm_route_ext_ec_ref);
 
@@ -6019,6 +6021,12 @@ static const struct soc_enum msm_route_ext_ec_ref_rx_enum[] = {
 static const struct snd_kcontrol_new voc_ext_ec_mux =
 	SOC_DAPM_ENUM_EXT("VOC_EXT_EC MUX Mux", msm_route_ext_ec_ref_rx_enum[0],
 			  msm_routing_ext_ec_get, msm_routing_ext_ec_put);
+
+#ifdef CONFIG_MACH_MI
+static const struct snd_kcontrol_new voip_ext_ec_mux =
+	SOC_DAPM_ENUM_EXT("VOIP_EXT_EC MUX Mux", msm_route_ext_ec_ref_rx_enum[0],
+			msm_routing_ext_ec_get, msm_routing_ext_ec_put);
+#endif
 
 static const struct snd_kcontrol_new pri_spdif_rx_mixer_controls[] = {
 	SOC_DOUBLE_EXT("MultiMedia1", SND_SOC_NOPM,
@@ -6471,11 +6479,6 @@ static const struct snd_kcontrol_new slimbus_rx_mixer_controls[] = {
 	msm_routing_put_audio_mixer),
 };
 
-#ifdef CONFIG_MACH_MI
-static const struct snd_kcontrol_new voip_ext_ec_mux =
-	SOC_DAPM_ENUM_EXT("VOIP_EXT_EC MUX Mux", msm_route_ext_ec_ref_rx_enum[0],
-			msm_routing_ext_ec_get, msm_routing_ext_ec_put);
-#endif
 #ifndef CONFIG_MI2S_DISABLE
 static const struct snd_kcontrol_new pri_i2s_rx_mixer_controls[] = {
 	SOC_DOUBLE_EXT("MultiMedia1", SND_SOC_NOPM,
@@ -27224,25 +27227,9 @@ static const struct snd_soc_dapm_route intercon[] = {
 #endif
 
 	{"VOC_EXT_EC MUX", "SLIM_1_TX",    "SLIMBUS_1_TX"},
-#ifdef CONFIG_MACH_MI
-	{"VOIP_EXT_EC MUX", "PRI_MI2S_TX", "PRI_MI2S_TX"},
-	{"VOIP_EXT_EC MUX", "SEC_MI2S_TX", "SEC_MI2S_TX"},
-	{"VOIP_EXT_EC MUX", "TERT_MI2S_TX", "TERT_MI2S_TX"},
-	{"VOIP_EXT_EC MUX", "QUAT_MI2S_TX", "QUAT_MI2S_TX"},
-	{"VOIP_EXT_EC MUX", "SLIM_1_TX",   "SLIMBUS_1_TX"},
-#endif
 	{"VOIP_UL", NULL, "VOC_EXT_EC MUX"},
 	{"VOICEMMODE1_UL", NULL, "VOC_EXT_EC MUX"},
 	{"VOICEMMODE2_UL", NULL, "VOC_EXT_EC MUX"},
-#ifdef CONFIG_MACH_MI
-	{"CS-VOICE_UL1", NULL, "VOIP_EXT_EC MUX"},
-	{"VOIP_UL", NULL, "VOIP_EXT_EC MUX"},
-	{"VoLTE_UL", NULL, "VOIP_EXT_EC MUX"},
-	{"VOICE2_UL", NULL, "VOIP_EXT_EC MUX"},
-	{"VoWLAN_UL", NULL, "VOIP_EXT_EC MUX"},
-	{"VOICEMMODE1_UL", NULL, "VOIP_EXT_EC MUX"},
-	{"VOICEMMODE2_UL", NULL, "VOIP_EXT_EC MUX"},
-#endif
 
 	{"AUDIO_REF_EC_UL1 MUX", "SLIM_1_TX", "SLIMBUS_1_TX"},
 	{"AUDIO_REF_EC_UL10 MUX", "SLIM_1_TX", "SLIMBUS_1_TX"},
@@ -30399,6 +30386,22 @@ static const struct snd_soc_dapm_route intercon_mi2s[] = {
 	{"VOC_EXT_EC MUX", "QUAT_MI2S_TX", "QUAT_MI2S_TX"},
 	{"VOC_EXT_EC MUX", "QUIN_MI2S_TX", "QUIN_MI2S_TX"},
 
+#ifdef CONFIG_MACH_MI
+	{"VOIP_EXT_EC MUX", "PRI_MI2S_TX", "PRI_MI2S_TX"},
+	{"VOIP_EXT_EC MUX", "SEC_MI2S_TX", "SEC_MI2S_TX"},
+	{"VOIP_EXT_EC MUX", "TERT_MI2S_TX", "TERT_MI2S_TX"},
+	{"VOIP_EXT_EC MUX", "QUAT_MI2S_TX", "QUAT_MI2S_TX"},
+	{"VOIP_EXT_EC MUX", "SLIM_1_TX",   "SLIMBUS_1_TX"},
+#endif
+#ifdef CONFIG_MACH_MI
+	{"CS-VOICE_UL1", NULL, "VOIP_EXT_EC MUX"},
+	{"VOIP_UL", NULL, "VOIP_EXT_EC MUX"},
+	{"VoLTE_UL", NULL, "VOIP_EXT_EC MUX"},
+	{"VOICE2_UL", NULL, "VOIP_EXT_EC MUX"},
+	{"VoWLAN_UL", NULL, "VOIP_EXT_EC MUX"},
+	{"VOICEMMODE1_UL", NULL, "VOIP_EXT_EC MUX"},
+	{"VOICEMMODE2_UL", NULL, "VOIP_EXT_EC MUX"},
+#endif
 	{"AUDIO_REF_EC_UL1 MUX", "PRI_MI2S_TX", "PRI_MI2S_TX"},
 	{"AUDIO_REF_EC_UL1 MUX", "SEC_MI2S_TX", "SEC_MI2S_TX"},
 	{"AUDIO_REF_EC_UL1 MUX", "TERT_MI2S_TX", "TERT_MI2S_TX"},
