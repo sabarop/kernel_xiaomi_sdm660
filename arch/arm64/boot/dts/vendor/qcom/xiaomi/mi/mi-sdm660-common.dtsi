@@ -344,18 +344,21 @@
 		qcom,fast-avg-setup = <0>;
 	};
 
-	chan@54 {
+	backlight_therm {
+		reg = <ADC_AMUX_THM4_PU2>;
 		label = "backlight_therm";
-		reg = <0x54>;
-		qcom,pre-div-channel-scaling = <0>;
-		qcom,calibration-type = "absolute";
-		qcom,scale-function = <2>;
-		qcom,hw-settle-time = <2>;
-		qcom,fast-avg-setup = <0>;
+		qcom,ratiometric;
+		qcom,hw-settle-time = <200>;
+		qcom,pre-scaling = <1 1>;
 	};
 };
 
 &pm660_adc_tm {
+	io-channels = <&pm660_vadc ADC_XO_THERM_PU2>,
+			<&pm660_vadc ADC_AMUX_THM1_PU2>,
+			<&pm660_vadc ADC_AMUX_THM5_PU2>,
+			<&pm660_vadc ADC_AMUX_THM4_PU2>;
+
 	chan@4d {
 		label = "cam_therm0";
 		reg = <0x4d>;
@@ -400,14 +403,9 @@
 		qcom,thermal-node;
 	};
 
-	chan@54 {
-		label = "backlight_therm";
-		reg = <0x54>;
-		qcom,pre-div-channel-scaling = <0>;
-		qcom,calibration-type = "absolute";
-		qcom,scale-function = <2>;
-		qcom,hw-settle-time = <2>;
-		qcom,btm-channel-number = <0x98>;
-		qcom,thermal-node;
+	backlight_therm {
+		reg = <ADC_AMUX_THM4_PU2>;
+		qcom,ratiometric;
+		qcom,hw-settle-time = <200>;
 	};
 };
