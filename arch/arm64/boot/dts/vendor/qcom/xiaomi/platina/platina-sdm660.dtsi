@@ -22,6 +22,7 @@
 /* sdm660.dtsi */
 
 &firmware {
+		/delete-node/ vbmeta;
 	android {
 		fstab {
 			system {
