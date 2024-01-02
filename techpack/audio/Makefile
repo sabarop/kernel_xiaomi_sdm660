@@ -51,6 +51,10 @@ ifeq ($(CONFIG_MACH_XIAOMI_WHYRED), y)
 include $(srctree)/techpack/audio/config/xiaomi/whyredauto.conf
 export $(shell sed 's/=.*//' $(srctree)/techpack/audio/config/xiaomi/whyredauto.conf)
 endif
+ifeq ($(CONFIG_MACH_XIAOMI_CLOVER), y)
+include $(srctree)/techpack/audio/config/xiaomi/cloverauto.conf
+export $(shell sed 's/=.*//' $(srctree)/techpack/audio/config/xiaomi/cloverauto.conf)
+endif
 
 # Use USERINCLUDE when you must reference the UAPI directories only.
 USERINCLUDE     += \
@@ -115,6 +119,10 @@ endif
 ifeq ($(CONFIG_MACH_XIAOMI_WHYRED), y)
 LINUXINCLUDE    += \
                 -include $(srctree)/techpack/audio/config/xiaomi/whyredautoconf.h
+endif
+ifeq ($(CONFIG_MACH_XIAOMI_CLOVER), y)
+LINUXINCLUDE    += \
+                -include $(srctree)/techpack/audio/config/xiaomi/cloverautoconf.h
 endif
 obj-y += soc/
 obj-y += dsp/
