@@ -268,7 +268,7 @@
 				1747200	514
 				1958400	632
 				2150400	795
-				2208000	896
+				2457600	932
 			>;
 		};
 	};
@@ -948,7 +948,7 @@
 				< 1113600 MHZ_TO_MBPS(200, 4) >,
 				< 1401600 MHZ_TO_MBPS(1017, 4) >,
 				< 2150400 MHZ_TO_MBPS(1555, 4) >,
-				< 2208000 MHZ_TO_MBPS(1804, 4) >;
+				< 2457600 MHZ_TO_MBPS(1804, 4) >;
 		};
 
 		cpu4_computemon: qcom,cpu4-computemon {
@@ -960,7 +960,7 @@
 				< 1401600 MHZ_TO_MBPS(547, 4) >,
 				< 1747200 MHZ_TO_MBPS(768, 4) >,
 				< 2150400 MHZ_TO_MBPS(1017, 4) >,
-				< 2208000 MHZ_TO_MBPS(1804, 4) >;
+				< 2457600 MHZ_TO_MBPS(1804, 4) >;
 		};
 	};
 
@@ -1082,6 +1082,7 @@
 		qcom,droop-fsm-en;
 		qcom,wfx-fsm-en;
 		qcom,pc-fsm-en;
+		qcom,force-sdm660-a1-cpu-speedbin;
 
 		clock-names = "aux_clk", "xo_a";
 		clocks = <&clock_gcc HMSS_GPLL0_CLK_SRC>,
@@ -1113,7 +1114,7 @@
 			< 1747200 >,
 			< 1958400 >,
 			< 2150400 >,
-			< 2208000 >;
+			< 2457600 >;
 	};
 
 	sdhc_1: sdhci@c0c4000 {
