@@ -87,6 +87,8 @@ static void a530_efuse_speed_bin(struct adreno_device *adreno_dev)
 	adreno_efuse_read_u32(adreno_dev, speed_bin[0], &val);
 
 	adreno_dev->speed_bin = (val & speed_bin[1]) >> speed_bin[2];
+	if (of_property_read_bool(device->pdev->dev.of_node, "qcom,force-sdm660-a1-gpu-speedbin"))
+		adreno_dev->speed_bin = 0;
 }
 
 static void a5xx_efuse_speed_bin(struct adreno_device *adreno_dev)

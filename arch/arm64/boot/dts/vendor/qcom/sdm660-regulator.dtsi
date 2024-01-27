@@ -574,22 +574,22 @@
 			gfx_vreg_corner: regulator {
 				regulator-name = "gfx_corner";
 				regulator-min-microvolt = <1>;
-				regulator-max-microvolt = <7>;
+				regulator-max-microvolt = <8>;
 
 				qcom,cpr-fuse-corners = <6>;
 				qcom,cpr-fuse-combos = <8>;
-				qcom,cpr-corners = <7>;
+				qcom,cpr-corners = <8>;
 
-				qcom,cpr-corner-fmax-map = <1 2 3 4 5 6>;
+				qcom,cpr-corner-fmax-map = <1 2 4 6 7 8>;
 
 				qcom,cpr-voltage-ceiling =
 					<585000  645000  725000  790000
-					 870000  925000 1070000>;
+					 870000  925000 1070000 1070000>;
 				qcom,cpr-voltage-floor =
 					<504000  504000  596000  652000
-					 712000  744000 1070000>;
+					 712000  744000 1070000 1070000>;
 
-				qcom,mem-acc-voltage = <1 1 1 2 2 2 2>;
+				qcom,mem-acc-voltage = <1 1 1 2 2 2 2 2>;
 				qcom,system-voltage =
 					<RPM_SMD_REGULATOR_LEVEL_LOW_SVS>,
 					<RPM_SMD_REGULATOR_LEVEL_LOW_SVS>,
@@ -597,12 +597,13 @@
 					<RPM_SMD_REGULATOR_LEVEL_SVS_PLUS>,
 					<RPM_SMD_REGULATOR_LEVEL_NOM>,
 					<RPM_SMD_REGULATOR_LEVEL_NOM_PLUS>,
+					<RPM_SMD_REGULATOR_LEVEL_TURBO>,
 					<RPM_SMD_REGULATOR_LEVEL_TURBO>;
 
 				qcom,corner-frequencies =
 					<160000000 266000000 370000000
 					 465000000 588000000 647000000
-					 750000000>;
+					 700000000 750000000>;
 
 				qcom,cpr-target-quotients =
 					<0    0    0    0     0    0  174  167
@@ -617,10 +618,14 @@
 					722  680  738  718    0    0    0    0>,
 					<0    0    0    0     0    0  595  553
 					811  768  837  811    0    0    0    0>,
-					<0    0    0    0     0    0    0    0
-					 0    0    0    0     0    0    0    0>;
+					<0    0    0    0     0    0  595  553
+					811  768  837  811    0    0    0    0>,
+					<0    0    0    0     0    0  595  553
+					811  768  837  811    0    0    0    0>;
 
 				qcom,cpr-ro-scaling-factor =
+					<  0    0    0    0   0    0 1790 1760
+					1990 1900 2140 2020   0    0    0    0>,
 					<  0    0    0    0   0    0 1790 1760
 					1990 1900 2140 2020   0    0    0    0>,
 					<  0    0    0    0   0    0 1790 1760
@@ -638,9 +643,9 @@
 
 				qcom,cpr-scaled-open-loop-voltage-as-ceiling;
 				qcom,cpr-corner-allow-ldo-mode =
-					<0 0 0 0 0 0 0>;
+					<0 0 0 0 0 0 0 0>;
 				qcom,cpr-corner-allow-closed-loop =
-					<0 0 0 0 0 0 0>;
+					<0 0 0 0 0 0 0 0>;
 			};
 		};
 	};
