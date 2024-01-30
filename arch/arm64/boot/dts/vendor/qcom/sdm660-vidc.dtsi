@@ -21,7 +21,7 @@
 			<0x80018 0x00000156>,
 			<0x8001c 0x00000156>;
 
-		qcom,max-hw-load = <1036800>; /* Full 4k @ 30 */
+		qcom,max-hw-load = <7833600>; /* 7680x4320@60fps, 3840x2176@240fps */
 		qcom,allowed-clock-rates =
 			/* TURBO     NOM+      NOM
 			 *  SVS+      SVS       SVS-

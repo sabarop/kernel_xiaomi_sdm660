@@ -821,7 +821,7 @@
 			< 588000000 5>,  /* NOM    */
 			< 647000000 6>,  /* NOM_L1 */
 			< 700000000 7>,  /* TURBO */
-			< 750000000 7>;  /* TURBO  */
+			< 750000000 8>;  /* TURBO  */
 		#clock-cells = <1>;
 		#reset-cells = <1>;
 	};
@@ -936,9 +936,9 @@
 			qcom,cachemiss-ev = <0x17>;
 			qcom,stall-cycle-ev = <0xE7>;
 			qcom,core-dev-table =
-				< 902400 MHZ_TO_MBPS(200, 4) >,
-				< 1401600 MHZ_TO_MBPS(547, 4) >,
-				< 1881600 MHZ_TO_MBPS(1017, 4) >;
+				< 902400 MHZ_TO_MBPS(547, 4) >,
+				< 1401600 MHZ_TO_MBPS(768, 4) >,
+				< 1843200 MHZ_TO_MBPS(1017, 4) >;
 		};
 
 		cpu0_computemon: qcom,cpu0-computemon {
@@ -946,9 +946,9 @@
 			qcom,cpulist = <&CPU0 &CPU1 &CPU2 &CPU3>;
 			qcom,target-dev = <&cpu0_cpu_ddr_latfloor>;
 			qcom,core-dev-table =
-				< 633600 MHZ_TO_MBPS(200, 4) >,
-				< 1401600 MHZ_TO_MBPS(412, 4) >,
-				< 1881600 MHZ_TO_MBPS(768, 4) >;
+				< 902400 MHZ_TO_MBPS(547, 4) >,
+				< 1401600 MHZ_TO_MBPS(768, 4) >,
+				< 1843200 MHZ_TO_MBPS(1017, 4) >;
 		};
 	};
 
@@ -963,9 +963,10 @@
 			qcom,cachemiss-ev = <0x17>;
 			qcom,stall-cycle-ev = <0x24>;
 			qcom,core-dev-table =
-				< 1113600 MHZ_TO_MBPS(200, 4) >,
+				< 1113600 MHZ_TO_MBPS(547, 4) >,
 				< 1401600 MHZ_TO_MBPS(1017, 4) >,
-				< 2150400 MHZ_TO_MBPS(1555, 4) >,
+				< 1747200 MHZ_TO_MBPS(1555, 4) >,
+				< 2150400 MHZ_TO_MBPS(1804, 4) >,
 				< 2457600 MHZ_TO_MBPS(1804, 4) >;
 		};
 
@@ -974,10 +975,10 @@
 			qcom,cpulist = <&CPU4 &CPU5 &CPU6 &CPU7>;
 			qcom,target-dev = <&cpu4_cpu_ddr_latfloor>;
 			qcom,core-dev-table =
-				< 1113600 MHZ_TO_MBPS(200, 4) >,
-				< 1401600 MHZ_TO_MBPS(547, 4) >,
-				< 1747200 MHZ_TO_MBPS(768, 4) >,
-				< 2150400 MHZ_TO_MBPS(1017, 4) >,
+				< 1113600 MHZ_TO_MBPS(547, 4) >,
+				< 1401600 MHZ_TO_MBPS(768, 4) >,
+				< 1747200 MHZ_TO_MBPS(1017, 4) >,
+				< 2150400 MHZ_TO_MBPS(1804, 4) >,
 				< 2457600 MHZ_TO_MBPS(1804, 4) >;
 		};
 	};
@@ -1117,6 +1118,7 @@
 		qcom,governor-per-policy;
 
 		qcom,cpufreq-table-0 =
+			<  300000 >,
 			<  633600 >,
 			<  902400 >,
 			< 1113600 >,
@@ -1127,6 +1129,7 @@
 			< 1843200 >;
 
 		qcom,cpufreq-table-4 =
+			<  300000 >,
 			< 1113600 >,
 			< 1401600 >,
 			< 1747200 >,
