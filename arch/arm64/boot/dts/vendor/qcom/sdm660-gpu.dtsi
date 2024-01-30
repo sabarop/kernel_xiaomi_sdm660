@@ -132,7 +132,7 @@
 
 			qcom,gpu-cx-ipeak@0 {
 				qcom,gpu-cx-ipeak = <&cx_ipeak_lm 1>;
-				qcom,gpu-cx-ipeak-freq = <700000000>;
+				qcom,gpu-cx-ipeak-freq = <750000000>;
 			};
 		};
 
@@ -175,7 +175,7 @@
 
 				qcom,speed-bin = <0>;
 
-				qcom,initial-pwrlevel = <6>;
+				qcom,initial-pwrlevel = <5>;
 
 				/* TURBO */
 				qcom,gpu-pwrlevel@0 {
@@ -265,7 +265,7 @@
 
 				qcom,speed-bin = <157>;
 
-				qcom,initial-pwrlevel = <6>;
+				qcom,initial-pwrlevel = <5>;
 
 				/* TURBO */
 				qcom,gpu-pwrlevel@0 {
