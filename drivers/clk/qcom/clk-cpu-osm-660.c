@@ -3184,6 +3184,9 @@ static int clk_cpu_osm_driver_probe(struct platform_device *pdev)
 		pte_efuse = readl_relaxed(pwrcl_clk.vbases[EFUSE_BASE]);
 		speedbin = ((pte_efuse >> PWRCL_EFUSE_SHIFT) &
 						    PWRCL_EFUSE_MASK);
+#ifdef CONFIG_ARCH_SDM660
+		speedbin = 0;
+#endif
 		snprintf(pwrclspeedbinstr, ARRAY_SIZE(pwrclspeedbinstr),
 			 "qcom,pwrcl-speedbin%d-v%d", speedbin, pvs_ver);
 	}
@@ -3203,6 +3206,9 @@ static int clk_cpu_osm_driver_probe(struct platform_device *pdev)
 		pte_efuse = readl_relaxed(perfcl_clk.vbases[EFUSE_BASE]);
 		speedbin = ((pte_efuse >> PERFCL_EFUSE_SHIFT) &
 							PERFCL_EFUSE_MASK);
+#ifdef CONFIG_ARCH_SDM660
+		speedbin = 0;
+#endif
 		snprintf(perfclspeedbinstr, ARRAY_SIZE(perfclspeedbinstr),
 			 "qcom,perfcl-speedbin%d-v%d", speedbin, pvs_ver);
 	}
