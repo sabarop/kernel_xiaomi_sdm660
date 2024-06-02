@@ -278,6 +278,7 @@
 };
 
 &pm660_vadc {
+	/delete-node/ pa_therm0;
 	chan@4d {
 		label = "cam_therm0";
 		reg = <0x4d>;
