@@ -332,7 +332,7 @@ struct msm_fb_data_type {
 	struct task_struct *disp_thread;
 	atomic_t commits_pending;
 	atomic_t kickoff_pending;
-#ifdef CONFIG_MACH_XIAOMI_CLOVER
+#if defined(CONFIG_MACH_XIAOMI_CLOVER) || defined(CONFIG_MACH_XIAOMI_PLATINA)
 	atomic_t resume_pending;
 	wait_queue_head_t resume_wait_q;
 #endif

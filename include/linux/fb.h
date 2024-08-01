@@ -537,7 +537,7 @@ struct fb_info {
 	} *apertures;
 
 	bool skip_vt_switch; /* no VT switch on suspend/resume required */
-#ifdef CONFIG_MACH_XIAOMI_CLOVER
+#if defined(CONFIG_MACH_XIAOMI_CLOVER) || defined(CONFIG_MACH_XIAOMI_PLATINA)
 	int blank;
 #endif
 };
