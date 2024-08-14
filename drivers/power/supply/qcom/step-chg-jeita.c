@@ -822,6 +822,9 @@ static int handle_jeita(struct step_chg_info *chip)
 
 	if (!chip->usb_icl_votable)
 		chip->usb_icl_votable = find_votable("USB_ICL");
+#ifdef CONFIG_MACH_XIAOMI_PLATINA
+	if (fv_uv > 0)
+#endif
 
 	if (!chip->usb_icl_votable)
 		goto set_jeita_fv;
@@ -1014,12 +1017,22 @@ int qcom_step_chg_init(struct device *dev,
 
 	chip->jeita_fcc_config->param.psy_prop = POWER_SUPPLY_PROP_TEMP;
 	chip->jeita_fcc_config->param.prop_name = "BATT_TEMP";
+#ifdef CONFIG_MACH_XIAOMI_PLATINA
+	chip->jeita_fcc_config->param.rise_hys = 5;
+	chip->jeita_fcc_config->param.fall_hys = 5;
+#else
 	chip->jeita_fcc_config->param.rise_hys = 10;
 	chip->jeita_fcc_config->param.fall_hys = 10;
+#endif
 	chip->jeita_fv_config->param.psy_prop = POWER_SUPPLY_PROP_TEMP;
 	chip->jeita_fv_config->param.prop_name = "BATT_TEMP";
+#ifdef CONFIG_MACH_XIAOMI_PLATINA
+	chip->jeita_fv_config->param.rise_hys = 5;
+	chip->jeita_fv_config->param.fall_hys = 5;
+#else
 	chip->jeita_fv_config->param.rise_hys = 10;
 	chip->jeita_fv_config->param.fall_hys = 10;
+#endif
 
 	INIT_DELAYED_WORK(&chip->status_change_work, status_change_work);
 	INIT_DELAYED_WORK(&chip->get_config_work, get_config_work);

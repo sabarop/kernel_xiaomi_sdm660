@@ -83,8 +83,18 @@
 
 #define MAX_CC_STEPS			20
 
+#ifdef CONFIG_MACH_XIAOMI_PLATINA
+#define VBAT_RESTART_FG_EMPTY_UV	3700000
+#define TEMP_THR_RESTART_FG		150
+#define RESTART_FG_START_WORK_MS	1000
+#define RESTART_FG_WORK_MS		2000
+#endif
+
 #define FULL_CAPACITY			100
 #define FULL_SOC_RAW			255
+#ifdef CONFIG_MACH_XIAOMI_PLATINA
+#define FULL_SOC_REPORT_THR		250
+#endif
 
 #define DEBUG_BATT_SOC			67
 #define BATT_MISS_SOC			50
@@ -329,6 +339,9 @@ struct fg_batt_props {
 #ifdef CONFIG_MACH_XIAOMI_CLOVER
 	int		batt_capacity_mah;
 #endif
+#ifdef CONFIG_MACH_XIAOMI_PLATINA
+	int		nom_cap_uah;
+#endif
 	int		fastchg_curr_ma;
 	int		*therm_coeffs;
 	int		therm_ctr_offset;
@@ -418,6 +431,24 @@ static const struct fg_pt fg_tsmc_osc_table[] = {
 	{  90,		444992 },
 };
 
+#ifdef CONFIG_MACH_XIAOMI_PLATINA
+#define BATT_MA_AVG_SAMPLES		8
+struct batt_params {
+	bool		update_now;
+	int		batt_raw_soc;
+	int		batt_soc;
+	int		samples_num;
+	int		samples_index;
+	int		batt_ma_avg_samples[BATT_MA_AVG_SAMPLES];
+	int		batt_ma_avg;
+	int		batt_ma_prev;
+	int		batt_ma;
+	int		batt_mv;
+	int		batt_temp;
+	struct timespec	last_soc_change_time;
+};
+#endif
+
 struct fg_memif {
 	struct fg_dma_address	*addr_map;
 	int			num_partitions;
@@ -482,6 +513,9 @@ struct fg_dev {
 	bool			battery_missing;
 	bool			fg_restarting;
 	bool			charge_full;
+#ifdef CONFIG_MACH_XIAOMI_PLATINA
+	bool			report_full;
+#endif
 	bool			recharge_soc_adjusted;
 	bool			soc_reporting_ready;
 	bool			use_ima_single_mode;
@@ -489,6 +523,13 @@ struct fg_dev {
 	bool			twm_state;
 	bool			use_dma;
 	bool			qnovo_enable;
+#ifdef CONFIG_MACH_XIAOMI_PLATINA
+	bool			empty_restart_fg;
+	struct batt_params	param;
+	struct delayed_work	soc_monitor_work;
+	struct delayed_work	soc_work;
+	struct delayed_work	empty_restart_fg_work;
+#endif
 	enum fg_version		version;
 	bool			suspended;
 	struct completion	soc_update;
@@ -496,6 +537,7 @@ struct fg_dev {
 	struct delayed_work	profile_load_work;
 	struct work_struct	status_change_work;
 	struct work_struct	esr_sw_work;
+	struct delayed_work	esr_timer_config_work;
 	struct delayed_work	sram_dump_work;
 	struct work_struct	esr_filter_work;
 	struct alarm		esr_filter_alarm;
