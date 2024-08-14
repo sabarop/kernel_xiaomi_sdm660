@@ -26,6 +26,10 @@ static int det_extn_cable_en;
 module_param(det_extn_cable_en, int, 0664);
 MODULE_PARM_DESC(det_extn_cable_en, "enable/disable extn cable detect");
 
+#ifdef CONFIG_MACH_XIAOMI_PLATINA
+extern bool hs_record_active;
+#endif
+
 static bool wcd_mbhc_detect_anc_plug_type(struct wcd_mbhc *mbhc)
 {
 	bool anc_mic_found = false;
@@ -230,7 +234,7 @@ static bool wcd_is_special_headset(struct wcd_mbhc *mbhc)
 					__func__);
 			break;
 		}
-#ifdef CONFIG_MACH_LONGCHEER
+#if defined(CONFIG_MACH_LONGCHEER) || defined(CONFIG_MACH_XIAOMI_PLATINA)
 		/*Add for selfie stick not work  tangshouxing 9/6*/
 		if (mbhc->impedance_detect) {
 			mbhc->mbhc_cb->compute_impedance(mbhc,
@@ -713,7 +717,7 @@ correct_plug_type:
 	if (!wrk_complete && mbhc->btn_press_intr) {
 		pr_debug("%s: Can be slow insertion of headphone\n", __func__);
 		wcd_cancel_btn_work(mbhc);
-#ifdef CONFIG_MACH_LONGCHEER
+#if defined(CONFIG_MACH_LONGCHEER) || defined(CONFIG_MACH_XIAOMI_PLATINA)
 		/* Report as headphone only if previously
 		 * not reported as lineout
 		 */
@@ -767,10 +771,14 @@ enable_supply:
 #endif
 	if (mbhc->mbhc_cb->mbhc_micbias_control)
 		wcd_mbhc_update_fsm_source(mbhc, plug_type);
-#if defined(CONFIG_MACH_XIAOMI_WHYRED) || defined(CONFIG_MACH_XIAOMI_WAYNE) || defined(CONFIG_MACH_XIAOMI_TULIP)
+#if defined(CONFIG_MACH_XIAOMI_WHYRED) || defined(CONFIG_MACH_XIAOMI_WAYNE) || defined(CONFIG_MACH_XIAOMI_TULIP) || defined(CONFIG_MACH_XIAOMI_PLATINA)
 	else{
 		/*Add for selfie stick not work  tangshouxing 9/6*/
-		if (mbhc->impedance_detect) {
+		if (mbhc->impedance_detect
+#ifdef CONFIG_MACH_XIAOMI_PLATINA
+			&& !hs_record_active
+#endif
+		) {
 			mbhc->mbhc_cb->compute_impedance(mbhc,
 			&mbhc->zl, &mbhc->zr);
 				if ((mbhc->zl > 20000) && (mbhc->zr > 20000)) {
