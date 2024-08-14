@@ -324,8 +324,12 @@ out_micb_en:
 #else
 		else
 #endif
+#ifdef CONFIG_MACH_XIAOMI_PLATINA
+			wcd_enable_curr_micbias(mbhc, WCD_MBHC_EN_MB);
+#else
 			/* enable current source and disable mb, pullup*/
 			wcd_enable_curr_micbias(mbhc, WCD_MBHC_EN_CS);
+#endif
 
 		/* configure cap settings properly when micbias is disabled */
 		if (mbhc->mbhc_cb->set_cap_mode)
@@ -355,6 +359,8 @@ out_micb_en:
 			/* Disable micbias, pullup & enable cs */
 #ifdef CONFIG_MACH_XIAOMI_CLOVER
 			wcd_enable_curr_micbias(mbhc, WCD_MBHC_EN_NONE);
+#elif defined(CONFIG_MACH_XIAOMI_PLATINA)
+			wcd_enable_curr_micbias(mbhc, WCD_MBHC_EN_MB);
 #else
 			wcd_enable_curr_micbias(mbhc, WCD_MBHC_EN_CS);
 #endif
@@ -381,6 +387,8 @@ out_micb_en:
 			/* Disable micbias, pullup & enable cs */
 #ifdef CONFIG_MACH_XIAOMI_CLOVER
 			wcd_enable_curr_micbias(mbhc, WCD_MBHC_EN_NONE);
+#elif defined(CONFIG_MACH_XIAOMI_PLATINA)
+			wcd_enable_curr_micbias(mbhc, WCD_MBHC_EN_MB);
 #else
 			wcd_enable_curr_micbias(mbhc, WCD_MBHC_EN_CS);
 #endif
@@ -649,7 +657,9 @@ void wcd_mbhc_report_plug(struct wcd_mbhc *mbhc, int insertion,
 		hphrocp_off_report(mbhc, SND_JACK_OC_HPHR);
 		hphlocp_off_report(mbhc, SND_JACK_OC_HPHL);
 		mbhc->current_plug = MBHC_PLUG_TYPE_NONE;
+#ifndef CONFIG_MACH_XIAOMI_PLATINA
 		mbhc->force_linein = false;
+#endif
 	} else {
 		/*
 		 * Report removal of current jack type.
@@ -739,6 +749,7 @@ void wcd_mbhc_report_plug(struct wcd_mbhc *mbhc, int insertion,
 					&mbhc->zl, &mbhc->zr);
 			WCD_MBHC_REG_UPDATE_BITS(WCD_MBHC_FSM_EN,
 						 fsm_en);
+#ifndef CONFIG_MACH_XIAOMI_PLATINA
 			if ((mbhc->zl > mbhc->mbhc_cfg->linein_th) &&
 				(mbhc->zr > mbhc->mbhc_cfg->linein_th) &&
 				(jack_type == SND_JACK_HEADPHONE)) {
@@ -757,6 +768,25 @@ void wcd_mbhc_report_plug(struct wcd_mbhc *mbhc, int insertion,
 				pr_debug("%s: Marking jack type as SND_JACK_LINEOUT\n",
 				__func__);
 			}
+#else
+			if ((jack_type == SND_JACK_UNSUPPORTED) &&
+				   mbhc->zl > 20000 &&
+				   mbhc->zr > 20000) {
+				mbhc->current_plug = MBHC_PLUG_TYPE_HEADSET;
+				mbhc->jiffies_atreport = jiffies;
+				jack_type = SND_JACK_HEADSET;
+				if (mbhc->hph_status) {
+					mbhc->hph_status &= ~(SND_JACK_LINEOUT |
+							SND_JACK_HEADPHONE |
+							SND_JACK_ANC_HEADPHONE |
+							SND_JACK_UNSUPPORTED);
+					wcd_mbhc_jack_report(mbhc,
+							&mbhc->headset_jack,
+							mbhc->hph_status,
+							WCD_MBHC_JACK_MASK);
+				}
+			}
+#endif
 		}
 
 		/* Do not calculate impedance again for lineout
@@ -866,7 +896,34 @@ void wcd_mbhc_find_plug_and_report(struct wcd_mbhc *mbhc,
 			wcd_mbhc_report_plug(mbhc, 0, SND_JACK_HEADPHONE);
 		if (mbhc->current_plug == MBHC_PLUG_TYPE_HEADSET)
 			wcd_mbhc_report_plug(mbhc, 0, SND_JACK_HEADSET);
+#ifdef CONFIG_MACH_XIAOMI_PLATINA
+			/*
+			 * calculate impedance detection
+			 * If Zl and Zr > 20k then it is special accessory
+			 * otherwise unsupported cable.
+			 */
+			/*Add for selfie stick not work  tangshouxing 9/6*/
+		if (mbhc->impedance_detect) {
+			mbhc->mbhc_cb->compute_impedance(mbhc,
+				&mbhc->zl, &mbhc->zr);
+			if ((mbhc->zl > 20000) && (mbhc->zr > 20000)) {
+				pr_debug("%s: special accessory \n", __func__);
+				/* Toggle switch back */
+				if (mbhc->mbhc_cfg->swap_gnd_mic &&
+					mbhc->mbhc_cfg->swap_gnd_mic(mbhc->component, true)) {
+					pr_debug("%s: US_EU gpio present,flip switch again\n"
+						, __func__);
+				}
+				/* enable CS/MICBIAS for headset button detection to work */
+				wcd_enable_mbhc_supply(mbhc, MBHC_PLUG_TYPE_HEADSET);
+				wcd_mbhc_report_plug(mbhc, 1, SND_JACK_HEADSET);
+			} else {
+				 wcd_mbhc_report_plug(mbhc, 1, SND_JACK_UNSUPPORTED);
+			}
+		}
+#else
 		wcd_mbhc_report_plug(mbhc, 1, SND_JACK_UNSUPPORTED);
+#endif
 	} else if (plug_type == MBHC_PLUG_TYPE_HEADSET) {
 		if (mbhc->mbhc_cfg->enable_anc_mic_detect &&
 		    mbhc->mbhc_fn->wcd_mbhc_detect_anc_plug_type)
@@ -953,6 +1010,14 @@ static void wcd_mbhc_swch_irq_handler(struct wcd_mbhc *mbhc)
 	dev_dbg(component->dev, "%s: enter\n", __func__);
 	WCD_MBHC_RSC_LOCK(mbhc);
 	mbhc->in_swch_irq_handler = true;
+
+#ifdef CONFIG_MACH_XIAOMI_PLATINA
+	/*QCOM FSM can not close corretly,when make a call.
+	  Disable FSM when the mbhc irq is detected */
+	/* Disable HW FSM */
+	WCD_MBHC_REG_UPDATE_BITS(WCD_MBHC_FSM_EN, 0);
+	WCD_MBHC_REG_UPDATE_BITS(WCD_MBHC_BTN_ISRC_CTL, 0);
+#endif
 
 	/* cancel pending button press */
 	if (wcd_cancel_btn_work(mbhc))
@@ -1663,6 +1728,7 @@ static int wcd_mbhc_init_gpio(struct wcd_mbhc *mbhc,
 
 	dev_dbg(mbhc->component->dev, "%s: gpio %s\n", __func__, gpio_dt_str);
 
+#ifndef CONFIG_MACH_XIAOMI_PLATINA
 	*gpio_dn = of_parse_phandle(card->dev->of_node, gpio_dt_str, 0);
 
 	if (!(*gpio_dn)) {
@@ -1674,6 +1740,20 @@ static int wcd_mbhc_init_gpio(struct wcd_mbhc *mbhc,
 			rc = -EINVAL;
 		}
 	}
+#else
+	*gpio = of_get_named_gpio(card->dev->of_node, gpio_dt_str, 0);
+	if (!gpio_is_valid(*gpio))
+		*gpio_dn = of_parse_phandle(card->dev->of_node, gpio_dt_str, 0);
+	if (!gpio_is_valid(*gpio) && !(*gpio_dn)) {
+		dev_err(card->dev, "%s, property %s not in node %s",
+			__func__, gpio_dt_str,
+			card->dev->of_node->full_name);
+		rc = -EINVAL;
+	} else {
+		dev_dbg(card->dev, "%s, detected %s",
+			__func__, gpio_dt_str);
+	}
+#endif
 
 	return rc;
 }
@@ -1702,21 +1782,32 @@ static int wcd_mbhc_usb_c_analog_setup_gpios(struct wcd_mbhc *mbhc, bool active)
 		if (config->usbc_en1_gpio_p)
 			rc = msm_cdc_pinctrl_select_active_state(
 					config->usbc_en1_gpio_p);
+#ifdef CONFIG_MACH_XIAOMI_PLATINA
+		if (gpio_is_valid(config->usbc_en1_gpio))
+			gpio_set_value(config->usbc_en1_gpio, 1);
+#else
 		if (rc == 0 && config->usbc_en2n_gpio_p)
 			rc = msm_cdc_pinctrl_select_active_state(
 					config->usbc_en2n_gpio_p);
+#endif
 		if (rc == 0 && config->usbc_force_gpio_p)
 			rc = msm_cdc_pinctrl_select_active_state(
 					config->usbc_force_gpio_p);
 		mbhc->usbc_mode = POWER_SUPPLY_TYPEC_SINK_AUDIO_ADAPTER;
 	} else {
 		/* no delay is required when disabling GPIOs */
+#ifndef CONFIG_MACH_XIAOMI_PLATINA
 		if (config->usbc_en2n_gpio_p)
 			msm_cdc_pinctrl_select_sleep_state(
 				config->usbc_en2n_gpio_p);
+#endif
 		if (config->usbc_en1_gpio_p)
 			msm_cdc_pinctrl_select_sleep_state(
 				config->usbc_en1_gpio_p);
+#ifdef CONFIG_MACH_XIAOMI_PLATINA
+		if (gpio_is_valid(config->usbc_en1_gpio))
+			gpio_set_value(config->usbc_en1_gpio, 0);
+#endif
 		if (config->usbc_force_gpio_p)
 			msm_cdc_pinctrl_select_sleep_state(
 				config->usbc_force_gpio_p);
@@ -1905,6 +1996,7 @@ int wcd_mbhc_start(struct wcd_mbhc *mbhc, struct wcd_mbhc_config *mbhc_cfg)
 			if (rc)
 				goto err;
 
+#ifndef CONFIG_MACH_XIAOMI_PLATINA
 			rc = wcd_mbhc_init_gpio(mbhc, mbhc_cfg,
 					"qcom,usbc-analog-en2_n_gpio",
 					&config->usbc_en2n_gpio,
@@ -1912,6 +2004,7 @@ int wcd_mbhc_start(struct wcd_mbhc *mbhc, struct wcd_mbhc_config *mbhc_cfg)
 			if (rc)
 				goto err;
 
+#endif
 			if (of_find_property(card->dev->of_node,
 					     "qcom,usbc-analog-force_detect_gpio",
 					     NULL)) {

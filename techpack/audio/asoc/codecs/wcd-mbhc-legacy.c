@@ -26,6 +26,10 @@ static int det_extn_cable_en;
 module_param(det_extn_cable_en, int, 0664);
 MODULE_PARM_DESC(det_extn_cable_en, "enable/disable extn cable detect");
 
+#ifdef CONFIG_MACH_XIAOMI_PLATINA
+extern bool hs_record_active;
+#endif
+
 static bool wcd_mbhc_detect_anc_plug_type(struct wcd_mbhc *mbhc)
 {
 	bool anc_mic_found = false;
@@ -230,6 +234,17 @@ static bool wcd_is_special_headset(struct wcd_mbhc *mbhc)
 					__func__);
 			break;
 		}
+#ifdef CONFIG_MACH_XIAOMI_PLATINA
+		/*Add for selfie stick not work  tangshouxing 9/6*/
+		if (mbhc->impedance_detect) {
+			mbhc->mbhc_cb->compute_impedance(mbhc,
+				&mbhc->zl, &mbhc->zr);
+			if ((mbhc->zl > 20000) && (mbhc->zr > 20000)) {
+				pr_debug("%s: Selfie stick detected\n",__func__);
+				break;
+			}
+		}
+#endif
 	}
 	if (is_spl_hs) {
 		pr_debug("%s: Headset with threshold found\n",  __func__);
@@ -278,7 +293,11 @@ static void wcd_mbhc_update_fsm_source(struct wcd_mbhc *mbhc,
 	};
 }
 
+#ifdef CONFIG_MACH_XIAOMI_PLATINA
+void wcd_enable_mbhc_supply(struct wcd_mbhc *mbhc,
+#else
 static void wcd_enable_mbhc_supply(struct wcd_mbhc *mbhc,
+#endif
 			enum wcd_mbhc_plug_type plug_type)
 {
 
@@ -309,7 +328,11 @@ static void wcd_enable_mbhc_supply(struct wcd_mbhc *mbhc,
 				wcd_enable_curr_micbias(mbhc,
 						WCD_MBHC_EN_PULLUP);
 			} else {
+#ifdef CONFIG_MACH_XIAOMI_PLATINA
+				wcd_enable_curr_micbias(mbhc, WCD_MBHC_EN_MB);
+#else
 				wcd_enable_curr_micbias(mbhc, WCD_MBHC_EN_CS);
+#endif
 			}
 		} else if (plug_type == MBHC_PLUG_TYPE_HEADPHONE) {
 			wcd_enable_curr_micbias(mbhc, WCD_MBHC_EN_CS);
@@ -682,10 +705,12 @@ correct_plug_type:
 	if (!wrk_complete && mbhc->btn_press_intr) {
 		pr_debug("%s: Can be slow insertion of headphone\n", __func__);
 		wcd_cancel_btn_work(mbhc);
+#ifndef CONFIG_MACH_XIAOMI_PLATINA
 		/* Report as headphone only if previously
 		 * not reported as lineout
 		 */
 		if (!mbhc->force_linein)
+#endif
 			plug_type = MBHC_PLUG_TYPE_HEADPHONE;
 	}
 	/*
@@ -728,8 +753,27 @@ report:
 enable_supply:
 	if (mbhc->mbhc_cb->mbhc_micbias_control)
 		wcd_mbhc_update_fsm_source(mbhc, plug_type);
+#ifdef CONFIG_MACH_XIAOMI_PLATINA
+	else{
+		/*Add for selfie stick not work  tangshouxing 9/6*/
+		if (mbhc->impedance_detect
+			&& !hs_record_active
+		) {			mbhc->mbhc_cb->compute_impedance(mbhc,
+			&mbhc->zl, &mbhc->zr);
+				if ((mbhc->zl > 20000) && (mbhc->zr > 20000)) {
+					pr_debug("%s:Selfie stick device,need enable btn isrc ctrl",__func__);
+					wcd_enable_mbhc_supply(mbhc, MBHC_PLUG_TYPE_HEADSET);
+				} else {
+					wcd_enable_mbhc_supply(mbhc, plug_type);
+				}
+		} else {
+			wcd_enable_mbhc_supply(mbhc, plug_type);
+		}
+	}
+#else
 	else
 		wcd_enable_mbhc_supply(mbhc, plug_type);
+#endif
 exit:
 	if (mbhc->mbhc_cb->mbhc_micbias_control &&
 	    !mbhc->micbias_enable)

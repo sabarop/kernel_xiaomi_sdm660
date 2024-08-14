@@ -648,4 +648,10 @@ int wcd_mbhc_get_button_mask(struct wcd_mbhc *mbhc);
 void wcd_mbhc_report_plug(struct wcd_mbhc *mbhc, int insertion,
 			enum snd_jack_types jack_type);
 
+#ifdef CONFIG_MACH_XIAOMI_PLATINA
+/*Add for selfie stick not work  tangshouxing 9/6*/
+void wcd_enable_mbhc_supply(struct wcd_mbhc *mbhc,
+			enum wcd_mbhc_plug_type plug_type);
+#endif
+
 #endif /* __WCD_MBHC_V2_H__ */
