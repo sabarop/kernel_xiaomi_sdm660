@@ -725,6 +725,7 @@
 };
 &i2c_8 {
 	status = "ok";
+	qcom,disable-dma;
 	backlight@2c {
 		compatible = "ti,lp8556";
 		reg = <0x2c>;
