@@ -22,6 +22,9 @@
 #include <linux/pinctrl/consumer.h>
 #include <linux/platform_device.h>
 #include <linux/version.h>
+#ifdef CONFIG_TOUCHSCREEN_COMMON
+#include <linux/input/tp_common.h>
+#endif
 
 #define GOODIX_COORDS_ARR_SIZE 4
 #define PROP_NAME_SIZE 24
@@ -1185,6 +1188,33 @@ static const struct file_operations config_proc_ops = {
 };
 #endif
 
+#ifdef CONFIG_TOUCHSCREEN_COMMON
+static ssize_t double_tap_show(struct kobject *kobj,
+			       struct kobj_attribute *attr, char *buf)
+{
+	const char c = GTP_gesture_func_on ? '1' : '0';
+	return sprintf(buf, "%c\n", c);
+}
+
+static ssize_t double_tap_store(struct kobject *kobj,
+				struct kobj_attribute *attr, const char *buf,
+				size_t count)
+{
+	int i;
+	if (sscanf(buf, "%u", &i) == 1 && i < 2) {
+		GTP_gesture_func_on = (i == 1);
+		return count;
+	} else {
+		return -EINVAL;
+	}
+}
+
+static struct tp_common_ops double_tap_ops = {
+	.show = double_tap_show,
+	.store = double_tap_store,
+};
+#endif
+
 static ssize_t gtp_workmode_show(struct device *dev,
 				 struct device_attribute *attr, char *buf)
 {
@@ -1363,6 +1393,9 @@ static int gtp_create_file(struct goodix_ts_data *ts)
 		/*TODO: debug change */
 		goto exit_free_config_proc;
 	}
+#ifdef CONFIG_TOUCHSCREEN_COMMON
+	tp_common_set_double_tap_ops(&double_tap_ops);
+#endif
 	return 0;
 
 exit_free_config_proc:
