@@ -40,6 +40,11 @@
 #include <linux/sched.h>
 #include <linux/devfreq_boost.h>
 #include <uapi/linux/sched/types.h>
+#ifdef CONFIG_MACH_XIAOMI_PLATINA
+#include <linux/interrupt.h>
+#include <linux/pm_wakeup.h>
+#endif
+
 #include "mdss_fb.h"
 #include "mdss_mdp_splash_logo.h"
 #define CREATE_TRACE_POINTS
@@ -76,6 +81,9 @@
 
 static struct fb_info *fbi_list[MAX_FBI_LIST];
 static int fbi_list_index;
+#ifdef CONFIG_MACH_XIAOMI_PLATINA
+static struct msm_fb_data_type *mfd_data;
+#endif
 
 static u32 mdss_fb_pseudo_palette[16] = {
 	0x00000000, 0xffffffff, 0xffffffff, 0xffffffff,
@@ -115,7 +123,7 @@ static int mdss_fb_send_panel_event(struct msm_fb_data_type *mfd,
 static void mdss_fb_set_mdp_sync_pt_threshold(struct msm_fb_data_type *mfd,
 		int type);
 
-#ifdef CONFIG_MACH_LONGCHEER
+#if defined(CONFIG_MACH_LONGCHEER) || defined(CONFIG_MACH_XIAOMI_PLATINA)
 #define WAIT_RESUME_TIMEOUT 200
 static struct fb_info *prim_fbi;
 static atomic_t prim_panel_is_on;
@@ -1295,6 +1303,46 @@ static int mdss_fb_init_panel_modes(struct msm_fb_data_type *mfd,
 	return 0;
 }
 
+#ifdef CONFIG_MACH_XIAOMI_PLATINA
+static irqreturn_t esd_err_irq_handle(int irq, void *data)
+{
+	struct msm_fb_data_type *mfd = data;
+
+	if (mfd && mdss_fb_is_power_off(mfd)) {
+		pr_debug("%s: ESD at power off state \n", __func__);
+		return IRQ_HANDLED;
+	}
+
+	pr_info("%s: ESD ERR detected!\n", __func__);
+
+	if (mfd) {
+		struct mdss_panel_data *pdata =
+			dev_get_platdata(&mfd->pdev->dev);
+		if (pdata->panel_info.panel_dead == true) {
+			pr_err("%s:already in recoverying", __func__);
+			return IRQ_HANDLED;
+		}
+		mdss_fb_report_panel_dead(mfd);
+	}
+	else
+		pr_err("%s: mfd is NULL\n", __func__);
+
+	return IRQ_HANDLED;
+}
+
+void mdss_fb_prim_panel_recover(void)
+{
+	pr_info("Primary panel recover...\n");
+
+	if (mfd_data)
+		mdss_fb_report_panel_dead(mfd_data);
+	else
+		pr_err("%s: Primary panel mfd is NULL\n", __func__);
+
+	pr_info("Primary panel recover done\n");
+}
+#endif
+
 static int mdss_fb_probe(struct platform_device *pdev)
 {
 	struct msm_fb_data_type *mfd = NULL;
@@ -1461,6 +1509,25 @@ static int mdss_fb_probe(struct platform_device *pdev)
 
 	INIT_DELAYED_WORK(&mfd->idle_notify_work, __mdss_fb_idle_notify_work);
 
+#ifdef CONFIG_MACH_XIAOMI_PLATINA
+	if (mfd->panel_info->esd_err_irq > 0) {
+		if (mfd->panel_info->esd_interrupt_flags) {
+			rc = request_threaded_irq(mfd->panel_info->esd_err_irq, NULL,
+				esd_err_irq_handle, (unsigned long)mfd->panel_info->esd_interrupt_flags,
+				"esd_err_irq", mfd);
+			if (rc < 0) {
+				pr_err("%s: request irq %d, flag:0x%x  failed\n", __func__, mfd->panel_info->esd_err_irq,
+					mfd->panel_info->esd_interrupt_flags);
+			}
+		}
+	}
+
+	if (mfd->panel_info->is_prim_panel) {
+		mfd_data = mfd;
+		pdata->panel_dead_report = mdss_fb_prim_panel_recover;
+	}
+#endif
+
 	return rc;
 }
 
@@ -1495,7 +1562,7 @@ static int mdss_fb_remove(struct platform_device *pdev)
 	if (!mfd)
 		return -ENODEV;
 
-#ifdef CONFIG_MACH_LONGCHEER
+#if defined(CONFIG_MACH_LONGCHEER) || defined(CONFIG_MACH_XIAOMI_PLATINA)
 	if (mfd->panel_info && mfd->panel_info->is_prim_panel) {
 		atomic_set(&prim_panel_is_on, false);
 		cancel_delayed_work_sync(&mfd->prim_panel_work);
@@ -1681,7 +1748,7 @@ static int mdss_fb_resume(struct platform_device *pdev)
 #endif
 
 #ifdef CONFIG_PM_SLEEP
-#ifdef CONFIG_MACH_LONGCHEER
+#if defined(CONFIG_MACH_LONGCHEER) || defined(CONFIG_MACH_XIAOMI_PLATINA)
 static int mdss_fb_pm_prepare(struct device *dev)
 {
 	struct msm_fb_data_type *mfd = dev_get_drvdata(dev);
@@ -1759,7 +1826,7 @@ static int mdss_fb_pm_resume(struct device *dev)
 #endif
 
 static const struct dev_pm_ops mdss_fb_pm_ops = {
-#ifdef CONFIG_MACH_LONGCHEER
+#if defined(CONFIG_MACH_LONGCHEER) || defined(CONFIG_MACH_XIAOMI_PLATINA)
 	.prepare = mdss_fb_pm_prepare,
 	.complete = mdss_fb_pm_complete,
 #endif
@@ -2198,7 +2265,7 @@ static int mdss_fb_blank(int blank_mode, struct fb_info *info)
 	struct mdss_panel_data *pdata;
 	struct msm_fb_data_type *mfd = (struct msm_fb_data_type *)info->par;
 
-#ifdef CONFIG_MACH_LONGCHEER
+#if defined(CONFIG_MACH_LONGCHEER) || defined(CONFIG_MACH_XIAOMI_PLATINA)
 	if ((info == prim_fbi) && (blank_mode == FB_BLANK_UNBLANK) &&
 		atomic_read(&prim_panel_is_on)) {
 		atomic_set(&prim_panel_is_on, false);
@@ -2839,7 +2906,7 @@ static int mdss_fb_register(struct msm_fb_data_type *mfd)
 	atomic_set(&mfd->commits_pending, 0);
 	atomic_set(&mfd->ioctl_ref_cnt, 0);
 	atomic_set(&mfd->kickoff_pending, 0);
-#ifdef CONFIG_MACH_LONGCHEER
+#if defined(CONFIG_MACH_LONGCHEER) || defined(CONFIG_MACH_XIAOMI_PLATINA)
 	atomic_set(&mfd->resume_pending, 0);
 #endif
 
@@ -2856,7 +2923,7 @@ static int mdss_fb_register(struct msm_fb_data_type *mfd)
 	init_waitqueue_head(&mfd->idle_wait_q);
 	init_waitqueue_head(&mfd->ioctl_q);
 	init_waitqueue_head(&mfd->kickoff_wait_q);
-#ifdef CONFIG_MACH_LONGCHEER
+#if defined(CONFIG_MACH_LONGCHEER) || defined(CONFIG_MACH_XIAOMI_PLATINA)
 	init_waitqueue_head(&mfd->resume_wait_q);
 #endif
 
@@ -2878,8 +2945,7 @@ static int mdss_fb_register(struct msm_fb_data_type *mfd)
 #endif
 	pr_info("FrameBuffer[%d] %dx%d registered successfully!\n", mfd->index,
 					fbi->var.xres, fbi->var.yres);
-
-#ifdef CONFIG_MACH_LONGCHEER
+#if defined(CONFIG_MACH_LONGCHEER) || defined(CONFIG_MACH_XIAOMI_PLATINA)
 	if (panel_info->is_prim_panel) {
 		prim_fbi = fbi;
 		atomic_set(&prim_panel_is_on, false);
@@ -5331,6 +5397,25 @@ int mdss_fb_get_phys_info(dma_addr_t *start, unsigned long *len, int fb_num)
 }
 EXPORT_SYMBOL(mdss_fb_get_phys_info);
 
+#ifdef CONFIG_MACH_XIAOMI_PLATINA
+bool mdss_panel_is_prim(void *fbinfo)
+{
+	struct msm_fb_data_type *mfd;
+	struct mdss_panel_info *pinfo;
+	struct fb_info *fbi = fbinfo;
+
+	if (!fbi)
+		return false;
+	mfd = fbi->par;
+	if (!mfd)
+		return false;
+	pinfo = mfd->panel_info;
+	if (!pinfo)
+		return false;
+	return pinfo->is_prim_panel;
+}
+#endif
+
 int __init mdss_fb_init(void)
 {
 	int rc = -ENODEV;
@@ -5448,7 +5533,7 @@ void mdss_fb_idle_pc(struct msm_fb_data_type *mfd)
 	}
 }
 
-#ifdef CONFIG_MACH_LONGCHEER
+#if defined(CONFIG_MACH_LONGCHEER) || defined(CONFIG_MACH_XIAOMI_PLATINA)
 /*
  * mdss_prim_panel_fb_unblank() - Unblank primary panel FB
  * @timeout : >0 blank primary panel FB after timeout (ms)
