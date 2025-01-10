@@ -743,6 +743,10 @@ static int handle_jeita(struct step_chg_info *chip)
 			vote(chip->usb_icl_votable, JEITA_VOTER, false, 0);
 	}
 
+#ifdef CONFIG_MACH_XIAOMI_PLATINA
+	if (fv_uv > 0)
+#endif
+
 set_jeita_fv:
 	vote(chip->fv_votable, JEITA_VOTER, fv_uv ? true : false, fv_uv);
 
@@ -861,6 +865,38 @@ static int step_chg_register_notifier(struct step_chg_info *chip)
 	return 0;
 }
 
+#if 0
+#ifdef CONFIG_MACH_XIAOMI_PLATINA
+int qcom_soft_jeita_fcc_init(int critical_low_fcc, int cool_fcc, int normal_cool_fcc, int normal_fcc, int warm_fcc)
+{
+	if (the_chip == NULL) {
+		pr_err("Qcom soft jeita chip info is not initialized\n");
+		return -EINVAL;
+	}
+	if (the_chip->sw_jeita_enable) {
+		jeita_fcc_config.fcc_cfg[0].value = critical_low_fcc;
+		jeita_fcc_config.fcc_cfg[1].value = cool_fcc;
+		jeita_fcc_config.fcc_cfg[2].value = normal_cool_fcc;
+		jeita_fcc_config.fcc_cfg[3].value = normal_fcc;
+		jeita_fcc_config.fcc_cfg[4].value = warm_fcc;
+
+		pr_info("jeita_fcc_config.fcc_cfg[0].value: %d "
+				"jeita_fcc_config.fcc_cfg[1].value: %d "
+				"jeita_fcc_config.fcc_cfg[2].value: %d "
+				"jeita_fcc_config.fcc_cfg[3].value: %d "
+				"jeita_fcc_config.fcc_cfg[4].value: %d\n",
+				jeita_fcc_config.fcc_cfg[0].value,
+				jeita_fcc_config.fcc_cfg[1].value,
+				jeita_fcc_config.fcc_cfg[2].value,
+				jeita_fcc_config.fcc_cfg[3].value,
+				jeita_fcc_config.fcc_cfg[4].value);
+	}
+
+	return 0;
+}
+#endif
+#endif
+
 int qcom_step_chg_init(struct device *dev,
 		bool step_chg_enable, bool sw_jeita_enable, bool jeita_arb_en)
 {
@@ -908,6 +944,8 @@ int qcom_step_chg_init(struct device *dev,
 	chip->jeita_fcc_config->param.prop_name = "BATT_TEMP";
 #ifdef CONFIG_MACH_LONGCHEER
 	chip->jeita_fcc_config->param.hysteresis = 0;
+#elif defined(CONFIG_MACH_XIAOMI_PLATINA)
+	chip->jeita_fcc_config->param.hysteresis = 5;
 #else
 	chip->jeita_fcc_config->param.hysteresis = 10;
 #endif
@@ -915,6 +953,8 @@ int qcom_step_chg_init(struct device *dev,
 	chip->jeita_fv_config->param.prop_name = "BATT_TEMP";
 #ifdef CONFIG_MACH_LONGCHEER
 	chip->jeita_fv_config->param.hysteresis = 0;
+#elif defined(CONFIG_MACH_XIAOMI_PLATINA)
+	chip->jeita_fv_config->param.hysteresis = 5;
 #else
 	chip->jeita_fv_config->param.hysteresis = 10;
 #endif

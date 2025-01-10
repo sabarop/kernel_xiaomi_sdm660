@@ -500,10 +500,12 @@ if (force_warm_reboot || need_warm_reset || in_panic) {
     qpnp_pon_system_pwr_off(PON_POWER_OFF_HARD_RESET);
 }
 
+#ifdef CONFIG_MACH_LONGCHEER
 if (in_panic) {
     qpnp_pon_set_restart_reason(PON_RESTART_REASON_PANIC);
     return;
 }
+#endif
 
 if (cmd != NULL) {
 	if (!strncmp(cmd, "bootloader", 10)) {
@@ -549,13 +551,17 @@ if (cmd != NULL) {
 		}
 	}
 	else {
+#ifdef CONFIG_MACH_LONGCHEER
 		qpnp_pon_set_restart_reason(PON_RESTART_REASON_NORMAL);
+#endif
 		__raw_writel(0x77665501, restart_reason);
 	}
 
 	}
 	else {
+#ifdef CONFIG_MACH_LONGCHEER
 		qpnp_pon_set_restart_reason(PON_RESTART_REASON_NORMAL);
+#endif
 		__raw_writel(0x77665501, restart_reason);
 }
 	flush_cache_all();
