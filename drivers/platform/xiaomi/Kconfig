@@ -19,6 +19,12 @@ config MACH_LONGCHEER
 	help
 	  Support for Longcheer boards
 
+config MACH_XIAOMI_CLOVER
+	bool "Clover Platform"
+	select MACH_XIAOMI
+	help
+	  This enables support for Xiaomi Mi Pad 4 Family
+
 config MACH_XIAOMI_LAVENDER
 	bool "Xiaomi lavender board"
 	select MACH_LONGCHEER
