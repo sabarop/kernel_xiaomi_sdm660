@@ -827,7 +827,7 @@ void thermal_cooling_device_stats_update(struct thermal_cooling_device *cdev,
 	spin_lock(&stats->lock);
 
 	if (stats->state == new_state 
-#if defined(CONFIG_MACH_LONGCHEER) || defined(CONFIG_MACH_XIAOMI_PLATINA)
+#if defined(CONFIG_MACH_LONGCHEER) || defined(CONFIG_MACH_XIAOMI_PLATINA) || defined(CONFIG_MACH_XIAOMI_CLOVER)
 		|| new_state >= stats->max_states)
 #endif		
 	{

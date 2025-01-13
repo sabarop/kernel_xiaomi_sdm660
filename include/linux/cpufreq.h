@@ -430,7 +430,7 @@ static inline void cpufreq_resume(void) {}
 #define CPUFREQ_ADJUST			(0)
 #define CPUFREQ_NOTIFY			(1)
 #define CPUFREQ_INCOMPATIBLE	(6)
-#if defined(CONFIG_MACH_LONGCHEER) || defined(CONFIG_MACH_XIAOMI_PLATINA)
+#if defined(CONFIG_MACH_LONGCHEER) || defined(CONFIG_MACH_XIAOMI_PLATINA) || defined(CONFIG_MACH_XIAOMI_CLOVER)
 #define CPUFREQ_THERMAL                 (2)
 #endif
 
