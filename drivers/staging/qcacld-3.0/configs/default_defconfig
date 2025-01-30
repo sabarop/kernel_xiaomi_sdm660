@@ -839,3 +839,6 @@ endif
 ifeq ($(CONFIG_ARCH_SDM660), y)
 CONFIG_WLAN_FEATURE_PKT_CAPTURE := y
 endif
+
+# Disable DFS channels on AP mode to avoid DFS CAC
+CONFIG_FEATURE_WLAN_STA_AP_MODE_DFS_DISABLE := y
