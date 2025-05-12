@@ -65,7 +65,7 @@ static const char wlan_cfg[] __initconst = {
 	"hostscan_adaptive_dwell_mode=1\n"
 	"drop_bcn_on_chan_mismatch=0\n"
 	"enable_rtt_mac_randomization=1\n"
-	"gEnableSNRMonitoring=1\n"
+	"gEnableSNRMonitoring=0\n"
 	"mawc_nlo_enabled=0\n"
 	"END\n"
 };
