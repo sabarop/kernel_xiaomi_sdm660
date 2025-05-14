@@ -68,7 +68,9 @@ static struct wakeup_source *fp_wakelock;
 static struct gf_dev gf;
 static int pid = -1;
 static struct sock *nl_sk = NULL;
+#ifdef CONFIG_MACH_LONGCHEER
 extern int fpsensor;
+#endif
 
 static struct gf_key_map maps[] = {
 	{ EV_KEY, GF_KEY_INPUT_HOME },
@@ -723,10 +725,12 @@ static inline int __init gf_init(void)
 {
 	int status;
 
+#ifdef CONFIG_MACH_LONGCHEER
 	if (fpsensor != 2) {
 		pr_err("Macle gf_init failed as fpsensor = %d(2=goodix)\n", fpsensor);
 		return -1;
 	}
+#endif
 
 	/* Claim our 256 reserved device numbers.  Then register a class
 	 * that will key udev/mdev to add/remove /dev nodes.  Last, register
