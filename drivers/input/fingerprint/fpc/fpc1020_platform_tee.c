@@ -45,7 +45,12 @@
 
 #define FPC1020_NAME "fpc1020"
 
+#ifdef CONFIG_MACH_XIAOMI_CLOVER
+#define FPC_TTW_HOLD_TIME		1000
+#else
 #define FPC_TTW_HOLD_TIME		400
+#endif
+
 #define RESET_LOW_SLEEP_MIN_US		5000
 #define RESET_LOW_SLEEP_MAX_US		(RESET_LOW_SLEEP_MIN_US + 100)
 #define RESET_HIGH_SLEEP1_MIN_US	100
@@ -62,17 +67,18 @@ extern int fpsensor;
 #endif
 
 static const char *const pctl_names[] = {
+#ifdef CONFIG_MACH_XIAOMI_CLOVER
+	"fpc1020_avdd_active",
+	"fpc1020_avdd_suspend",
+	"fpc1020_vddio_active",
+	"fpc1020_vddio_suspend",
+#endif
 	"fpc1020_reset_reset",
 	"fpc1020_reset_active",
+#ifndef CONFIG_MACH_XIAOMI_PLATINA
 	"fpc1020_irq_active",
+#endif
 };
-
-typedef enum {
-	VDD_ANA = 0,
-	VCC_SPI = 0,
-	VDD_IO = 0,
-	FPC_VREG_MAX,
-} fpc_rails_t;
 
 struct vreg_config {
 	char *name;
@@ -82,9 +88,11 @@ struct vreg_config {
 };
 
 static const struct vreg_config vreg_conf[] = {
-	{ "vdd_ana", 1800000UL, 1800000UL, 6000 },
-	{ "vcc_spi", 1800000UL, 1800000UL, 10 },
-	{ "vdd_io", 1800000UL, 1800000UL, 6000 },
+	{ "vdd_ana", 1800000UL, 1800000UL, 6000, },
+#ifndef CONFIG_MACH_XIAOMI_PLATINA
+	{ "vcc_spi", 1800000UL, 1800000UL, 10, },
+	{ "vdd_io", 1800000UL, 1800000UL, 6000, },
+#endif
 };
 
 struct fpc1020_data {
@@ -94,6 +102,12 @@ struct fpc1020_data {
 	struct regulator *vreg[ARRAY_SIZE(vreg_conf)];
 	struct wakeup_source *ttw_ws;
 	struct mutex lock; /* To set/get exported values in sysfs */
+#ifdef CONFIG_MACH_XIAOMI_CLOVER
+	bool compatible_enabled;
+#endif
+#ifdef CONFIG_MACH_XIAOMI_SDM660
+	int irqf;
+#endif
 	struct notifier_block fb_notifier;
 #ifdef CONFIG_TOUCHSCREEN_COMMON
 	struct input_handler input_handler;
@@ -107,42 +121,77 @@ struct fpc1020_data {
 	atomic_t wakeup_enabled; /* Used both in ISR and non-ISR */
 };
 
-static struct kernfs_node *soc_symlink = NULL;
+static __always_inline irqreturn_t fpc1020_irq_handler(int irq, void *handle);
+static inline int fpc1020_request_named_gpio(struct fpc1020_data *fpc1020,
+	const char *label, int *gpio);
 
-static inline int vreg_setup(struct fpc1020_data *fpc1020, fpc_rails_t fpc_rail,
+static struct kernfs_node *soc_symlink = NULL;
+#ifdef CONFIG_MACH_XIAOMI_CLOVER
+static inline int hw_reset(struct fpc1020_data *fpc1020);
+#endif
+
+static inline int vreg_setup(struct fpc1020_data *fpc1020, const char *name,
 			     bool enable)
 {
+	size_t i;
 	int rc;
-	struct regulator *vreg = fpc1020->vreg[fpc_rail];
+	struct regulator *vreg;
 	struct device *dev = fpc1020->dev;
 
-	if (!vreg)
-		return -EINVAL;
+	for (i = 0; i < ARRAY_SIZE(fpc1020->vreg); i++) {
+		const char *n = vreg_conf[i].name;
+		if (!strcmp(n, name))
+			goto found;
+	}
 
+	dev_err(dev, "Regulator %s not found\n", name);
+
+	return -EINVAL;
+
+found:
+	vreg = fpc1020->vreg[i];
 	if (enable) {
+		if (!vreg) {
+			vreg = regulator_get(dev, name);
+			if (IS_ERR(vreg)) {
+				dev_err(dev, "Unable to get %s\n", name);
+				return PTR_ERR(vreg);
+			}
+		}
+
+#ifndef CONFIG_MACH_XIAOMI_PLATINA
 		if (regulator_count_voltages(vreg) > 0) {
-			rc = regulator_set_voltage(vreg,
-					vreg_conf[fpc_rail].vmin,
-					vreg_conf[fpc_rail].vmax);
+			rc = regulator_set_voltage(vreg, vreg_conf[i].vmin,
+					vreg_conf[i].vmax);
 			if (rc)
 				dev_err(dev,
 					"Unable to set voltage on %s, %d\n",
-					vreg_conf[fpc_rail].name, rc);
+					name, rc);
 		}
 
-		rc = regulator_set_load(vreg, vreg_conf[fpc_rail].ua_load);
+#ifdef CONFIG_MACH_XIAOMI_SDM660
+		rc = regulator_set_load(vreg, vreg_conf[i].ua_load);
 		if (rc < 0)
 			dev_err(dev, "Unable to set current on %s, %d\n",
-					vreg_conf[fpc_rail].name, rc);
+					name, rc);
+#endif
+#endif
 
 		rc = regulator_enable(vreg);
 		if (rc) {
-			dev_err(dev, "error enabling %s: %d\n",
-				vreg_conf[fpc_rail].name, rc);
+			dev_err(dev, "error enabling %s: %d\n", name, rc);
+			regulator_put(vreg);
+			vreg = NULL;
 		}
+		fpc1020->vreg[i] = vreg;
 	} else {
-		if (regulator_is_enabled(vreg))
-			regulator_disable(vreg);
+		if (vreg) {
+			if (regulator_is_enabled(vreg))
+				regulator_disable(vreg);
+
+			regulator_put(vreg);
+			fpc1020->vreg[i] = NULL;
+		}
 		rc = 0;
 	}
 
@@ -207,13 +256,15 @@ static inline int select_pin_ctl(struct fpc1020_data *fpc1020, const char *name)
 				dev_err(dev, "cannot select '%s'\n", name);
 			else
 				dev_dbg(dev, "Selected '%s'\n", name);
-
-			return rc;
+			goto exit;
 		}
 	}
 
+	rc = -EINVAL;
 	dev_err(dev, "%s:'%s' not found\n", __func__, name);
-	return -EINVAL;
+
+exit:
+	return rc;
 }
 
 static inline ssize_t pinctl_set_store(struct device *dev,
@@ -231,18 +282,6 @@ static inline ssize_t pinctl_set_store(struct device *dev,
 }
 static DEVICE_ATTR_WO(pinctl_set);
 
-static inline fpc_rails_t name_to_fpc_rail(const char *name)
-{
-	if (!strcmp(name, "vdd_ana"))
-		return VDD_ANA;
-	else if (!strcmp(name, "vcc_spi"))
-		return VCC_SPI;
-	else if (!strcmp(name, "vdd_io"))
-		return VDD_IO;
-	else
-		return -EINVAL;
-}
-
 static inline ssize_t regulator_enable_store(struct device *dev,
 					     struct device_attribute *attr,
 					     const char *buf, size_t count)
@@ -252,7 +291,6 @@ static inline ssize_t regulator_enable_store(struct device *dev,
 	char name[16];
 	int rc;
 	bool enable;
-	fpc_rails_t fpc_rail;
 
 	if (sscanf(buf, "%15[^,],%c", name, &op) != NUM_PARAMS_REG_ENABLE_SET)
 		return -EINVAL;
@@ -263,33 +301,39 @@ static inline ssize_t regulator_enable_store(struct device *dev,
 	else
 		return -EINVAL;
 
-	fpc_rail = name_to_fpc_rail(name);
-
 	mutex_lock(&fpc1020->lock);
-	rc = vreg_setup(fpc1020, fpc_rail, enable);
+	rc = vreg_setup(fpc1020, name, enable);
 	mutex_unlock(&fpc1020->lock);
 
 	return rc ? rc : count;
 }
 static DEVICE_ATTR_WO(regulator_enable);
 
-static inline void hw_reset(struct fpc1020_data *fpc1020)
+static inline int hw_reset(struct fpc1020_data *fpc1020)
 {
-	(void)gpio_get_value(fpc1020->irq_gpio);
+	int irq_gpio;
+	int rc;
 
-	select_pin_ctl(fpc1020, "fpc1020_reset_active");
+	rc = select_pin_ctl(fpc1020, "fpc1020_reset_active");
 
+	if (rc)
+		goto exit;
 	usleep_range(RESET_HIGH_SLEEP1_MIN_US, RESET_HIGH_SLEEP1_MAX_US);
 
-	select_pin_ctl(fpc1020, "fpc1020_reset_reset");
-
+	rc = select_pin_ctl(fpc1020, "fpc1020_reset_reset");
+	if (rc)
+		goto exit;
 	usleep_range(RESET_LOW_SLEEP_MIN_US, RESET_LOW_SLEEP_MAX_US);
 
-	select_pin_ctl(fpc1020, "fpc1020_reset_active");
-
+	rc = select_pin_ctl(fpc1020, "fpc1020_reset_active");
+	if (rc)
+		goto exit;
 	usleep_range(RESET_HIGH_SLEEP2_MIN_US, RESET_HIGH_SLEEP2_MAX_US);
 
-	(void)gpio_get_value(fpc1020->irq_gpio);
+	irq_gpio = gpio_get_value(fpc1020->irq_gpio);
+
+exit:
+	return rc;
 }
 
 static inline ssize_t hw_reset_store(struct device *dev, struct device_attribute *attr,
@@ -336,36 +380,112 @@ static inline void config_irq(struct fpc1020_data *fpc1020, bool enabled)
  * @note This function will not send any commands to the sensor it will only
  *       control it "electrically".
  */
-static inline void device_prepare(struct fpc1020_data *fpc1020, bool enable)
+static inline int device_prepare(struct fpc1020_data *fpc1020, bool enable)
 {
+	int rc;
+#ifdef CONFIG_MACH_XIAOMI_SDM660
+	struct device *dev = fpc1020->dev;
+#endif
+
 	mutex_lock(&fpc1020->lock);
 	if (enable && !fpc1020->prepared) {
 		fpc1020->prepared = true;
+
+#ifdef CONFIG_MACH_XIAOMI_SDM660
+#ifndef CONFIG_MACH_XIAOMI_PLATINA
+		rc = select_pin_ctl(fpc1020, "fpc1020_irq_active");
+		if (rc)
+			goto exit;
+#endif
+
+		rc = fpc1020_request_named_gpio(fpc1020, "fpc,gpio_irq",
+					&fpc1020->irq_gpio);
+		if (rc)
+			goto exit;
+#ifndef CONFIG_MACH_XIAOMI_PLATINA
+		rc = fpc1020_request_named_gpio(fpc1020, "fpc,gpio_rst",
+					&fpc1020->rst_gpio);
+		if (rc)
+			goto irq_gpio_exit;
+#endif
+
+		rc = devm_request_threaded_irq(dev, gpio_to_irq(fpc1020->irq_gpio),
+			NULL, fpc1020_irq_handler, fpc1020->irqf,
+			dev_name(dev), fpc1020);
+		if (rc)
+			goto rst_gpio_exit;
+
+		/* Request that the interrupt should be wakeable */
+		enable_irq_wake(gpio_to_irq(fpc1020->irq_gpio));
+#endif
 		select_pin_ctl(fpc1020, "fpc1020_reset_reset");
 
-		vreg_setup(fpc1020, VCC_SPI, true);
-		vreg_setup(fpc1020, VDD_IO, true);
-		vreg_setup(fpc1020, VDD_ANA, true);
+#ifndef CONFIG_MACH_XIAOMI_PLATINA
+		rc = vreg_setup(fpc1020, "vcc_spi", true);
+		if (rc)
+#ifdef CONFIG_MACH_XIAOMI_CLOVER
+			goto exit;
+#else
+			goto free_irq_exit;
+#endif
+
+		rc = vreg_setup(fpc1020, "vdd_io", true);
+		if (rc)
+			goto exit_1;
+#endif
+
+		rc = vreg_setup(fpc1020, "vdd_ana", true);
+		if (rc)
+			goto exit_2;
 
 		usleep_range(PWR_ON_SLEEP_MIN_US, PWR_ON_SLEEP_MAX_US);
 
-		/* As we can't control chip, select here the other part of the
+		/* As we can't control chip select here the other part of the
 		 * sensor driver eg. the TEE driver needs to do a _SOFT_ reset
 		 * on the sensor after power up to be sure that the sensor is
-		 * in a good state after power up. Acked by ASIC. */
-		select_pin_ctl(fpc1020, "fpc1020_reset_active");
+		 * in a good state after power up. Okeyed by ASIC. */
+
+		(void)select_pin_ctl(fpc1020, "fpc1020_reset_active");
+
+#ifdef CONFIG_MACH_XIAOMI_SDM660
+		rc = hw_reset(fpc1020);
+#endif
 	} else if (!enable && fpc1020->prepared) {
-		select_pin_ctl(fpc1020, "fpc1020_reset_reset");
+		rc = 0;
+		(void)select_pin_ctl(fpc1020, "fpc1020_reset_reset");
 
 		usleep_range(PWR_ON_SLEEP_MIN_US, PWR_ON_SLEEP_MAX_US);
 
-		vreg_setup(fpc1020, VDD_ANA, false);
-		vreg_setup(fpc1020, VDD_IO, false);
-		vreg_setup(fpc1020, VCC_SPI, false);
-
+		(void)vreg_setup(fpc1020, "vdd_ana", false);
+exit_2:
+#ifdef CONFIG_MACH_XIAOMI_CLOVER
+		(void)vreg_setup(fpc1020, "vdd_io", false);
+exit_1:
+		(void)vreg_setup(fpc1020, "vcc_spi", false);
+exit:
+#elif CONFIG_MACH_XIAOMI_SDM660
+#ifndef CONFIG_MACH_XIAOMI_PLATINA
+		(void)vreg_setup(fpc1020, "vdd_io", false);
+exit_1:
+		(void)vreg_setup(fpc1020, "vcc_spi", false);
+free_irq_exit:
+#endif
+		disable_irq(gpio_to_irq(fpc1020->irq_gpio));
+		devm_free_irq(dev, gpio_to_irq(fpc1020->irq_gpio), fpc1020);
+rst_gpio_exit:
+#ifndef CONFIG_MACH_XIAOMI_PLATINA
+		devm_gpio_free(dev, fpc1020->rst_gpio);
+irq_gpio_exit:
+#endif
+		devm_gpio_free(dev, fpc1020->irq_gpio);
+exit:
+#endif
 		fpc1020->prepared = false;
-	}
+	} else
+		rc = 0;
 	mutex_unlock(&fpc1020->lock);
+
+	return rc;
 }
 
 /*
@@ -377,15 +497,15 @@ static inline ssize_t device_prepare_store(struct device *dev,
 					   struct device_attribute *attr,
 					   const char *buf, size_t count)
 {
-	int rc = 0;
+	int rc;
 	struct fpc1020_data *fpc1020 = dev_get_drvdata(dev);
 
 	if (!strcmp(buf, "enable"))
-		device_prepare(fpc1020, true);
+		rc = device_prepare(fpc1020, true);
 	else if (!strcmp(buf, "disable"))
-		device_prepare(fpc1020, false);
+		rc = device_prepare(fpc1020, false);
 	else
-		rc = -EINVAL;
+		return -EINVAL;
 
 	return rc ? rc : count;
 }
@@ -399,6 +519,7 @@ static inline ssize_t wakeup_enable_store(struct device *dev,
 					  struct device_attribute *attr,
 					  const char *buf, size_t count)
 {
+#ifndef CONFIG_MACH_XIAOMI_PLATINA
 	struct fpc1020_data *fpc1020 = dev_get_drvdata(dev);
 	ssize_t ret = count;
 
@@ -412,6 +533,9 @@ static inline ssize_t wakeup_enable_store(struct device *dev,
 	mutex_unlock(&fpc1020->lock);
 
 	return ret;
+#else
+	return count;
+#endif
 }
 static DEVICE_ATTR_WO(wakeup_enable);
 
@@ -440,9 +564,144 @@ static inline ssize_t irq_ack(struct device *dev,
 }
 static DEVICE_ATTR(irq, 0600, irq_get, irq_ack);
 
+#ifdef CONFIG_MACH_XIAOMI_SDM660
+static inline ssize_t irq_enable_store(struct device *dev,
+				       struct device_attribute *attr,
+				       const char *buf, size_t count)
+{
+        int rc = 0;
+        struct fpc1020_data *fpc1020 = dev_get_drvdata(dev);
+
+        if (!strcmp(buf, "1")) {
+                mutex_lock(&fpc1020->lock);
+                enable_irq(gpio_to_irq(fpc1020->irq_gpio));
+                mutex_unlock(&fpc1020->lock);
+                pr_debug("fpc enable irq\n");
+        } else if (!strcmp(buf, "0")) {
+                mutex_lock(&fpc1020->lock);
+                disable_irq(gpio_to_irq(fpc1020->irq_gpio));
+                mutex_unlock(&fpc1020->lock);
+                pr_debug("fpc disable irq\n");
+        }
+
+        return rc ? rc : count;
+}
+static DEVICE_ATTR_WO(irq_enable);
+#endif
+
+#ifdef CONFIG_MACH_XIAOMI_CLOVER
+static inline ssize_t compatible_all_store(struct device *dev, struct device_attribute *attr,
+				     const char *buf, size_t count)
+{
+	int rc;
+	int i;
+	int irqf;
+	struct fpc1020_data *fpc1020 = dev_get_drvdata(dev);
+	dev_err(dev, "compatible all enter %d\n", fpc1020->compatible_enabled);
+	if (!strcmp(buf, "enable") && fpc1020->compatible_enabled != 1) {
+		rc = fpc1020_request_named_gpio(fpc1020, "fpc,gpio_irq", &fpc1020->irq_gpio);
+		if (rc)
+			goto exit;
+
+		rc = fpc1020_request_named_gpio(fpc1020, "fpc,gpio_rst", &fpc1020->rst_gpio);
+		dev_err(dev, "fpc request reset result = %d\n", rc);
+		if (rc)
+			goto exit;
+		fpc1020->fingerprint_pinctrl = devm_pinctrl_get(dev);
+		if (IS_ERR(fpc1020->fingerprint_pinctrl)) {
+			if (PTR_ERR(fpc1020->fingerprint_pinctrl) == -EPROBE_DEFER) {
+				dev_info(dev, "pinctrl is not ready\n");
+				rc = -EPROBE_DEFER;
+				goto exit;
+			}
+			dev_err(dev, "Target does not use pinctrl\n");
+			fpc1020->fingerprint_pinctrl = NULL;
+			rc = -EINVAL;
+			goto exit;
+		}
+
+		for (i = 0; i < ARRAY_SIZE(fpc1020->pinctrl_state); i++) {
+			const char* n = pctl_names[i];
+			struct pinctrl_state* state = pinctrl_lookup_state(fpc1020->fingerprint_pinctrl, n);
+			if (IS_ERR(state)) {
+				dev_err(dev, "cannot find '%s'\n", n);
+				rc = -EINVAL;
+				goto exit;
+			}
+			dev_info(dev, "found pin control %s\n", n);
+			fpc1020->pinctrl_state[i] = state;
+		}
+		rc = select_pin_ctl(fpc1020, "fpc1020_vddio_active");
+		if (rc)
+			goto exit;
+		usleep_range(PWR_ON_SLEEP_MIN_US, PWR_ON_SLEEP_MAX_US);
+
+		rc = select_pin_ctl(fpc1020, "fpc1020_reset_reset");
+		if (rc)
+			goto exit;
+		rc = select_pin_ctl(fpc1020, "fpc1020_irq_active");
+		if (rc)
+			goto exit;
+		irqf = IRQF_TRIGGER_RISING | IRQF_ONESHOT;
+		if (of_property_read_bool(dev->of_node, "fpc,enable-wakeup"))
+			device_init_wakeup(dev, 1);
+		rc = devm_request_threaded_irq(dev, gpio_to_irq(fpc1020->irq_gpio),
+			NULL, fpc1020_irq_handler,
+			irqf,
+			dev_name(dev), fpc1020);
+		if (rc)
+			goto exit;
+
+		/* Request that the interrupt should be wakeable */
+		enable_irq_wake(gpio_to_irq(fpc1020->irq_gpio));
+		fpc1020->compatible_enabled = 1;
+		if (of_property_read_bool(dev->of_node, "fpc,enable-on-boot")) {
+			dev_info(dev, "Enabling hardware\n");
+			(void)device_prepare(fpc1020, true);
+#ifdef LINUX_CONTROL_SPI_CLK
+			(void)set_clks(fpc1020, false);
+#endif
+		}
+
+		hw_reset(fpc1020);
+
+		rc = select_pin_ctl(fpc1020, "fpc1020_avdd_active");
+		if (rc)
+			goto exit;
+		usleep_range(PWR_ON_SLEEP_MIN_US, PWR_ON_SLEEP_MAX_US);
+	} else if (!strcmp(buf, "disable") && fpc1020->compatible_enabled != 0) {
+		if (gpio_is_valid(fpc1020->irq_gpio)) {
+			devm_gpio_free(dev, fpc1020->irq_gpio);
+			pr_info("remove irq_gpio success\n");
+		}
+		if (gpio_is_valid(fpc1020->rst_gpio)) {
+			devm_gpio_free(dev, fpc1020->rst_gpio);
+			pr_info("remove rst_gpio success\n");
+		}
+		devm_free_irq(dev, gpio_to_irq(fpc1020->irq_gpio), fpc1020);
+
+		rc = select_pin_ctl(fpc1020, "fpc1020_avdd_suspend");
+		if (rc)
+			goto exit;
+		usleep_range(PWR_ON_SLEEP_MIN_US, PWR_ON_SLEEP_MAX_US);
+
+		rc = select_pin_ctl(fpc1020, "fpc1020_vddio_suspend");
+		if (rc)
+			goto exit;
+		usleep_range(PWR_ON_SLEEP_MIN_US, PWR_ON_SLEEP_MAX_US);
+
+		fpc1020->compatible_enabled = 0;
+	}
+	return count;
+exit:
+	return -EINVAL;
+}
+static DEVICE_ATTR_WO(compatible_all);
+#endif
+
 static inline ssize_t proximity_state_store(struct device *dev,
-					    struct device_attribute *attr,
-					    const char *buf, size_t count)
+				     struct device_attribute *attr,
+				     const char *buf, size_t count)
 {
 	struct fpc1020_data *fpc1020 = dev_get_drvdata(dev);
 	int rc;
@@ -475,6 +734,12 @@ static struct attribute *attributes[] = {
 	&dev_attr_clk_enable.attr,
 	&dev_attr_irq.attr,
 	&dev_attr_fingerdown_wait.attr,
+#ifdef CONFIG_MACH_XIAOMI_SDM660
+	&dev_attr_irq_enable.attr,
+#endif
+#ifdef CONFIG_MACH_XIAOMI_CLOVER
+	&dev_attr_compatible_all.attr,
+#endif
 	&dev_attr_proximity_state.attr,
 	NULL
 };
@@ -487,10 +752,17 @@ static __always_inline irqreturn_t fpc1020_irq_handler(int irq, void *handle)
 {
 	struct fpc1020_data *fpc1020 = handle;
 
-	__pm_wakeup_event(fpc1020->ttw_ws, FPC_TTW_HOLD_TIME);
+	if (atomic_read(&fpc1020->wakeup_enabled))
+		__pm_wakeup_event(fpc1020->ttw_ws, FPC_TTW_HOLD_TIME);
 
 	sysfs_notify(&fpc1020->dev->kobj, NULL, dev_attr_irq.attr.name);
-
+#ifdef CONFIG_MACH_XIAOMI_SDM660
+	if (fpc1020->wait_finger_down && fpc1020->fb_black && fpc1020->prepared) {
+#else
+	if (fpc1020->wait_finger_down && fpc1020->fb_black) {
+#endif
+		fpc1020->wait_finger_down = false;
+	}
 	return IRQ_HANDLED;
 }
 
@@ -515,15 +787,19 @@ static inline int fpc1020_request_named_gpio(struct fpc1020_data *fpc1020,
 	return 0;
 }
 
-static __always_inline int fpc_fb_notif_callback(struct notifier_block *nb, unsigned long val,
-						 void *data)
+static __always_inline int fpc_fb_notif_callback(struct notifier_block *nb,
+						 unsigned long val, void *data)
 {
 	struct fpc1020_data *fpc1020 =
 		container_of(nb, struct fpc1020_data, fb_notifier);
 	struct fb_event *evdata = data;
 	unsigned int blank;
 
+#ifdef CONFIG_MACH_XIAOMI_SDM660
+	if (!fpc1020 || val != FB_EVENT_BLANK || fpc1020->prepared == false)
+#else
 	if (!fpc1020 || val != FB_EVENT_BLANK)
+#endif
 		return 0;
 
 	if (evdata && evdata->data && val == FB_EVENT_BLANK) {
@@ -619,36 +895,22 @@ static const struct input_device_id ids[] = {
 };
 #endif
 
-static inline int fpc1020_get_regulators(struct fpc1020_data *fpc1020)
-{
-	struct device *dev = fpc1020->dev;
-	unsigned short i;
-
-	for (i = 0; i < FPC_VREG_MAX; i++) {
-		fpc1020->vreg[i] = devm_regulator_get(dev, vreg_conf[i].name);
-
-		if (IS_ERR_OR_NULL(fpc1020->vreg[i])) {
-			fpc1020->vreg[i] = NULL;
-			dev_err(dev, "CRITICAL: Cannot get %s regulator.\n",
-				vreg_conf[i].name);
-			return -EINVAL;
-		}
-	}
-
-	return 0;
-}
-
 static inline int fpc1020_probe(struct platform_device *pdev)
 {
 	struct device *dev = &pdev->dev;
+	int rc = 0;
+#ifdef CONFIG_MACH_XIAOMI_SDM660
+	size_t i;
+#endif
+#ifdef CONFIG_MACH_XIAOMI_CLOVER
+	int irqf = 0;
+#endif
 	struct device *platform_dev;
 	struct kobject *soc_kobj;
 	struct kernfs_node *devices_node, *soc_node;
 	struct device_node *np = dev->of_node;
 	struct fpc1020_data *fpc1020 =
 		devm_kzalloc(dev, sizeof(*fpc1020), GFP_KERNEL);
-	int rc = 0;
-	size_t i;
 
 	if (!fpc1020) {
 		dev_err(dev,
@@ -657,12 +919,11 @@ static inline int fpc1020_probe(struct platform_device *pdev)
 	}
 
 #ifdef CONFIG_MACH_LONGCHEER
-	if (fpsensor != 1) {
+	if(fpsensor != 1) {
 		pr_err("Macle fpc1020_probe failed as fpsensor=%d(1=fp)\n",
 		       fpsensor);
-
-		return -1;
-	}
+                 return -1;
+         }
 #endif
 
 	fpc1020->dev = dev;
@@ -673,20 +934,7 @@ static inline int fpc1020_probe(struct platform_device *pdev)
 		return -EINVAL;
 	}
 
-	rc = fpc1020_get_regulators(fpc1020);
-	if (rc)
-		return rc;
-
-	rc = fpc1020_request_named_gpio(fpc1020, "fpc,gpio_irq",
-					&fpc1020->irq_gpio);
-	if (rc)
-		return -EINVAL;
-
-	rc = fpc1020_request_named_gpio(fpc1020, "fpc,gpio_rst",
-					&fpc1020->rst_gpio);
-	if (rc)
-		return -EINVAL;
-
+#ifndef CONFIG_MACH_XIAOMI_CLOVER
 	fpc1020->fingerprint_pinctrl = devm_pinctrl_get(dev);
 	if (IS_ERR(fpc1020->fingerprint_pinctrl)) {
 		if (PTR_ERR(fpc1020->fingerprint_pinctrl) == -EPROBE_DEFER) {
@@ -710,24 +958,18 @@ static inline int fpc1020_probe(struct platform_device *pdev)
 		fpc1020->pinctrl_state[i] = state;
 	}
 
-	select_pin_ctl(fpc1020, "fpc1020_reset_reset");
-	select_pin_ctl(fpc1020, "fpc1020_irq_active");
-
+#ifdef CONFIG_MACH_XIAOMI_PLATINA
+	atomic_set(&fpc1020->wakeup_enabled, 1);
+#else
 	atomic_set(&fpc1020->wakeup_enabled, 0);
+#endif
 
+	fpc1020->irqf = IRQF_TRIGGER_RISING | IRQF_ONESHOT;
 	if (of_property_read_bool(dev->of_node, "fpc,enable-wakeup"))
 		device_init_wakeup(dev, 1);
+#endif
 
 	mutex_init(&fpc1020->lock);
-	rc = devm_request_threaded_irq(dev, gpio_to_irq(fpc1020->irq_gpio),
-		NULL, fpc1020_irq_handler,
-		IRQF_TRIGGER_RISING | IRQF_ONESHOT,
-		dev_name(dev), fpc1020);
-	if (rc)
-		return rc;
-
-	/* Request that the interrupt should be wakeable */
-	enable_irq_wake(gpio_to_irq(fpc1020->irq_gpio));
 
 	fpc1020->ttw_ws = wakeup_source_register(NULL, "fpc_ttw_ws");
 
@@ -739,22 +981,24 @@ static inline int fpc1020_probe(struct platform_device *pdev)
 	fpc1020->input_handler.id_table = ids;
 	rc = input_register_handler(&fpc1020->input_handler);
 	if (rc)
-		return rc;
+		goto exit;
 #endif
 
 	rc = sysfs_create_group(&dev->kobj, &attribute_group);
 	if (rc)
-		return rc;
+		goto exit;
 
+#ifndef CONFIG_MACH_XIAOMI_CLOVER
 	if (of_property_read_bool(dev->of_node, "fpc,enable-on-boot"))
 		(void)device_prepare(fpc1020, true);
 
+#endif
 	if (!dev->parent || !dev->parent->parent)
-		return rc;
+		goto exit;
 
 	platform_dev = dev->parent->parent;
 	if (strcmp(kobject_name(&platform_dev->kobj), "platform"))
-		return rc;
+		goto exit;
 
 	devices_node = platform_dev->kobj.sd->parent;
 	soc_kobj = &dev->parent->kobj;
@@ -767,15 +1011,14 @@ static inline int fpc1020_probe(struct platform_device *pdev)
 	if (IS_ERR(soc_symlink))
 		dev_warn(dev, "Unable to create soc symlink\n");
 
-	hw_reset(fpc1020);
-
 	dev_info(dev, "%s: ok\n", __func__);
 	fpc1020->fb_black = false;
 	fpc1020->wait_finger_down = false;
 	fpc1020->fb_notifier = fpc_notif_block;
 	fb_register_client(&fpc1020->fb_notifier);
 
-	return 0;
+exit:
+	return rc;
 }
 
 static inline int fpc1020_remove(struct platform_device *pdev)
@@ -788,9 +1031,12 @@ static inline int fpc1020_remove(struct platform_device *pdev)
 	sysfs_remove_group(&pdev->dev.kobj, &attribute_group);
 	mutex_destroy(&fpc1020->lock);
 	wakeup_source_unregister(fpc1020->ttw_ws);
-	vreg_setup(fpc1020, VDD_ANA, false);
-	vreg_setup(fpc1020, VDD_IO, false);
-	vreg_setup(fpc1020, VCC_SPI, false);
+	(void)vreg_setup(fpc1020, "vdd_ana", false);
+#ifndef CONFIG_MACH_XIAOMI_PLATINA
+	(void)vreg_setup(fpc1020, "vdd_io", false);
+	(void)vreg_setup(fpc1020, "vcc_spi", false);
+#endif
+	dev_info(&pdev->dev, "%s\n", __func__);
 
 	return 0;
 }
