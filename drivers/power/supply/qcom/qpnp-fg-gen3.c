@@ -5700,7 +5700,7 @@ static void soc_work_fn(struct work_struct *work)
 		prev_soc = soc;
 	}
 
-	schedule_delayed_work(
+	queue_delayed_work(system_power_efficient_wq, 
 		&fg->soc_work,
 		msecs_to_jiffies(SOC_WORK_MS));
 
@@ -5740,7 +5740,7 @@ static void empty_restart_fg_work(struct work_struct *work)
 			if (batt_psy_initialized(fg))
 				power_supply_changed(fg->batt_psy);
 		} else {
-			schedule_delayed_work(
+			queue_delayed_work(system_power_efficient_wq, 
 					&fg->empty_restart_fg_work,
 					msecs_to_jiffies(RESTART_FG_WORK_MS));
 		}
@@ -5897,7 +5897,7 @@ static void soc_monitor_work(struct work_struct *work)
 			fg->param.batt_soc, fg->param.batt_raw_soc,
 			fg->param.batt_ma, fg->charge_status);
 
-	schedule_delayed_work(&fg->soc_monitor_work,
+	queue_delayed_work(system_power_efficient_wq, &fg->soc_monitor_work,
 			msecs_to_jiffies(MONITOR_SOC_WAIT_PER_MS));
 }
 #endif
@@ -6158,9 +6158,9 @@ static int fg_gen3_probe(struct platform_device *pdev)
 	queue_delayed_work(system_power_efficient_wq, &fg->profile_load_work, 0);
 
 #ifdef CONFIG_MACH_XIAOMI_PLATINA
-	schedule_delayed_work(&fg->soc_work, 0);
+	queue_delayed_work(system_power_efficient_wq, &fg->soc_work, 0);
 	fg->param.batt_soc = -EINVAL;
-		schedule_delayed_work(&fg->soc_monitor_work,
+		queue_delayed_work(system_power_efficient_wq, &fg->soc_monitor_work,
 					msecs_to_jiffies(MONITOR_SOC_WAIT_MS));
 
 	/*
@@ -6171,7 +6171,7 @@ static int fg_gen3_probe(struct platform_device *pdev)
 	 */
 	if ((volt_uv >= VBAT_RESTART_FG_EMPTY_UV)
 			&& (msoc == 0) && (batt_temp >= TEMP_THR_RESTART_FG))
-		schedule_delayed_work(&fg->empty_restart_fg_work,
+		queue_delayed_work(system_power_efficient_wq, &fg->empty_restart_fg_work,
 					msecs_to_jiffies(RESTART_FG_START_WORK_MS));
 #endif
 
@@ -6207,7 +6207,7 @@ static int fg_gen3_resume(struct device *dev)
 	struct fg_gen3_chip *chip = dev_get_drvdata(dev);
 	struct fg_dev *fg = &chip->fg;
 #ifdef CONFIG_MACH_XIAOMI_PLATINA
-	schedule_delayed_work(&fg->esr_timer_config_work, 0);
+	queue_delayed_work(system_power_efficient_wq, &fg->esr_timer_config_work, 0);
 #else
 	int rc;
 
@@ -6231,7 +6231,7 @@ static int fg_gen3_resume(struct device *dev)
 	spin_unlock(&fg->suspend_lock);
 #ifdef CONFIG_MACH_XIAOMI_PLATINA
 	fg->param.update_now = true;
-	schedule_delayed_work(&fg->soc_monitor_work,
+	queue_delayed_work(system_power_efficient_wq, &fg->soc_monitor_work,
 				msecs_to_jiffies(MONITOR_SOC_WAIT_MS));
 #endif
 

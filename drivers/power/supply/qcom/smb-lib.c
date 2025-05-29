@@ -4741,7 +4741,7 @@ static void monitor_charging_work(struct work_struct *work)
 			pr_info("%s: Charger_temp = %d\n",
 					__func__, val.intval);
 
-		schedule_delayed_work(&chg->monitor_charging_work,
+		queue_delayed_work(system_power_efficient_wq, &chg->monitor_charging_work,
 				msecs_to_jiffies(CHG_MONITOR_WORK_DELAY_MS));
 	}
 }
@@ -4901,7 +4901,7 @@ static void monitor_boost_charge_work(struct work_struct *work)
 		} else {
 			chg->boost_ibat_high_count = 0;
 		}
-		schedule_delayed_work(&chg->monitor_boost_charge_work,
+		queue_delayed_work(system_power_efficient_wq, &chg->monitor_boost_charge_work,
 				msecs_to_jiffies(BOOST_MONITOR_WORK_DELAY_MS));
 	}
 }
@@ -5060,9 +5060,9 @@ void smblib_usb_plugin_locked(struct smb_charger *chg)
 		 * In order to monitor VBUS_NOW to fix unstandard QC charger
 		 * not charge issue, launch a delayed work to monitor.
 		 */
-		schedule_delayed_work(&chg->monitor_charging_work,
+		queue_delayed_work(system_power_efficient_wq, &chg->monitor_charging_work,
 					msecs_to_jiffies(CHG_MONITOR_START_DELAY_MS));
-		schedule_delayed_work(&chg->cc_float_charge_work,
+		queue_delayed_work(system_power_efficient_wq, &chg->cc_float_charge_work,
 					msecs_to_jiffies(CC_FLOAT_WORK_START_DELAY_MS));
 #endif
 		/* vbus rising when APSD was disabled and PD_ACTIVE = 0 */
@@ -5350,7 +5350,7 @@ static void smblib_handle_hvdcp_3p0_auth_done(struct smb_charger *chg,
 			vote(chg->usb_icl_votable, LEGACY_UNKNOWN_VOTER, true,
 					HVDCP2_CURRENT_UA);
 		if (!chg->check_vbus_once) {
-			schedule_delayed_work(&chg->check_vbus_work,
+			queue_delayed_work(system_power_efficient_wq, &chg->check_vbus_work,
 					msecs_to_jiffies(CHECK_VBUS_WORK_DELAY_MS));
 			chg->check_vbus_once = true;
 		}
@@ -5935,7 +5935,7 @@ static void typec_sink_insertion(struct smb_charger *chg)
 	 * when sink is detected, launch a work to monitor ibat, if ibat
 	 * is too high, must limit otg icl to lower to protect the battery
 	 */
-	schedule_delayed_work(&chg->monitor_boost_charge_work,
+	queue_delayed_work(system_power_efficient_wq, &chg->monitor_boost_charge_work,
 				msecs_to_jiffies(5000));
 #endif
 	if (chg->use_extcon) {
@@ -6247,7 +6247,7 @@ static void smblib_handle_typec_insertion(struct smb_charger *chg)
 			 */
 			if (!work_busy(&chg->pl_enable_work.work)) {
 				pr_info("pl_enable_work launch again\n");
-				schedule_delayed_work(&chg->pl_enable_work,
+				queue_delayed_work(system_power_efficient_wq, &chg->pl_enable_work,
 					msecs_to_jiffies(PL_DELAY_MS));
 			}
 		}
@@ -6317,7 +6317,7 @@ static void smblib_handle_typec_cc_state_change(struct smb_charger *chg)
 			smblib_typec_mode_name[chg->typec_mode]);
 		smblib_handle_typec_insertion(chg);
 #ifdef CONFIG_MACH_XIAOMI_PLATINA
-		schedule_delayed_work(&chg->charger_type_recheck, msecs_to_jiffies(20000));
+		queue_delayed_work(system_power_efficient_wq, &chg->charger_type_recheck, msecs_to_jiffies(20000));
 #endif
 	} else if (chg->typec_present &&
 				chg->typec_mode == POWER_SUPPLY_TYPEC_NONE) {
@@ -6877,7 +6877,7 @@ static void smblib_reg_work(struct work_struct *work)
 	rc = smblib_get_prop_usb_present(chg, &val);
 	if (rc < 0) {
 		pr_err("Couldn't get usb present rc=%d\n", rc);
-		schedule_delayed_work(&chg->reg_work,
+		queue_delayed_work(system_power_efficient_wq, &chg->reg_work,
 			NOT_CHARGING_PERIOD_S * HZ);
 		return;
 	}
@@ -6889,11 +6889,11 @@ static void smblib_reg_work(struct work_struct *work)
 			pr_err("Couldn't get charger_temp rc=%d\n", rc);
 		else
 			pr_info("%s: Charger_temp = %d\n", __func__, val.intval);
-		schedule_delayed_work(&chg->reg_work,
+		queue_delayed_work(system_power_efficient_wq, &chg->reg_work,
 			CHARGING_PERIOD_S * HZ);
 	}
 	else
-		schedule_delayed_work(&chg->reg_work,
+		queue_delayed_work(system_power_efficient_wq, &chg->reg_work,
 			NOT_CHARGING_PERIOD_S * HZ);
 }
 #endif
@@ -7070,7 +7070,7 @@ static void smblib_charger_type_recheck(struct work_struct *work)
 
 check_next:
 	check_count++;
-	schedule_delayed_work(&chg->charger_type_recheck, msecs_to_jiffies(recheck_time));
+	queue_delayed_work(system_power_efficient_wq, &chg->charger_type_recheck, msecs_to_jiffies(recheck_time));
 }
 #endif
 
