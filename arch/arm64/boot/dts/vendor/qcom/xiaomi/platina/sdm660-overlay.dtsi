@@ -548,13 +548,13 @@
 // custom
 / {
 	reserved-memory {
-		ramoops {
-			compatible = "removed-dma-pool", "ramoops";
-			no-map;
+		ramoops: ramoops@b0000000 {
+			compatible = "ramoops";
 			reg = <0 0xb0000000 0 0x400000>;
-			status = "ok";
-			console-size = <0x200000>;
-			pmsg-size = <0x200000>;
+			record-size = <0x100000>;
+			console-size = <0x100000>;
+			ftrace-size = <0x80000>;
+			pmsg-size = <0x80000>;
 		};
 	};
 };
