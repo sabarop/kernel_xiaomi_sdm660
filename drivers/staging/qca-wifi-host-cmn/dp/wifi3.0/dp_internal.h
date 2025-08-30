@@ -1144,7 +1144,7 @@ void dp_pkt_log_init(struct cdp_pdev *ppdev, void *scn);
 static inline void dp_hif_update_pipe_callback(void *soc, void *cb_context,
 	QDF_STATUS (*callback)(void *, qdf_nbuf_t, uint8_t), uint8_t pipe_id)
 {
-	struct hif_msg_callbacks hif_pipe_callbacks;
+	struct hif_msg_callbacks hif_pipe_callbacks = { 0 };
 	struct dp_soc *dp_soc = (struct dp_soc *)soc;
 
 	/* TODO: Temporary change to bypass HTC connection for this new
