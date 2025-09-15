@@ -42,7 +42,7 @@
 #define ADC_MODE_VAL_ULP1     0x09
 #define ADC_MODE_VAL_ULP2     0x0B
 
-#define NUM_ATTEMPTS 5
+#define NUM_ATTEMPTS 20
 
 enum {
 	CODEC_TX = 0,
@@ -1988,8 +1988,8 @@ static int wcd938x_get_logical_addr(struct swr_device *swr_dev)
 			dev_err(&swr_dev->dev,
 				"%s get devnum %d for dev addr %llx failed\n",
 				__func__, devnum, swr_dev->addr);
-			/* retry after 1ms */
-			usleep_range(1000, 1010);
+			/* retry after 4ms */
+			usleep_range(4000, 4010);
 		}
 	} while (ret && --num_retry);
 	swr_dev->dev_num = devnum;
