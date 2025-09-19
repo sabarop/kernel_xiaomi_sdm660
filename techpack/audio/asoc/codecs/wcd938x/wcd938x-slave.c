@@ -117,7 +117,7 @@ static ssize_t wcd938x_swrslave_reg_show(struct swr_device *pdev,
 		if (((total + len) >= count - 1) || (len < 0))
 			break;
 		if (copy_to_user((ubuf + total), tmp_buf, len)) {
-			pr_err("%s: fail to copy reg dump\n", __func__);
+			pr_err_ratelimited("%s: fail to copy reg dump\n", __func__);
 			total = -EFAULT;
 			goto copy_err;
 		}
@@ -214,7 +214,7 @@ static ssize_t codec_debug_peek_write(struct file *file,
 	if (rc == 0)
 		rc = cnt;
 	else
-		pr_err("%s: rc = %d\n", __func__, rc);
+		pr_err_ratelimited("%s: rc = %d\n", __func__, rc);
 
 	return rc;
 }
@@ -250,7 +250,7 @@ static ssize_t codec_debug_write(struct file *file,
 	if (rc == 0)
 		rc = cnt;
 	else
-		pr_err("%s: rc = %d\n", __func__, rc);
+		pr_err_ratelimited("%s: rc = %d\n", __func__, rc);
 
 	return rc;
 }
@@ -280,7 +280,7 @@ static int wcd938x_slave_bind(struct device *dev,
 	struct swr_device *pdev = to_swr_device(dev);
 
 	if (!pdev) {
-		pr_err("%s: invalid swr device handle\n", __func__);
+		pr_err_ratelimited("%s: invalid swr device handle\n", __func__);
 		return -EINVAL;
 	}
 
@@ -304,7 +304,7 @@ static void wcd938x_slave_unbind(struct device *dev,
 
 	wcd938x_slave = swr_get_dev_data(pdev);
 	if (!wcd938x_slave) {
-		dev_err(&pdev->dev, "%s: wcd938x_slave is NULL\n", __func__);
+		dev_err_ratelimited(&pdev->dev, "%s: wcd938x_slave is NULL\n", __func__);
 		return;
 	}
 }
