@@ -26,6 +26,11 @@
 #include "qdf_platform.h"
 
 #define MAX_UNWINDOWED_ADDRESS 0x80000
+
+#ifdef WINDOW_ENABLE_BIT
+#undef WINDOW_ENABLE_BIT
+#endif
+
 #ifdef QCA_WIFI_QCA6390
 #define WINDOW_ENABLE_BIT 0x40000000
 #else
