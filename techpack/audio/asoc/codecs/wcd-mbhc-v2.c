@@ -778,7 +778,6 @@ void wcd_mbhc_report_plug(struct wcd_mbhc *mbhc, int insertion,
 				if (mbhc->hph_status) {
 					mbhc->hph_status &= ~(SND_JACK_LINEOUT |
 							SND_JACK_HEADPHONE |
-							SND_JACK_ANC_HEADPHONE |
 							SND_JACK_UNSUPPORTED);
 					wcd_mbhc_jack_report(mbhc,
 							&mbhc->headset_jack,
