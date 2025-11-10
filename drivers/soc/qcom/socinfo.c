@@ -1556,6 +1556,7 @@ static void * __init setup_dummy_socinfo(void)
 	} else if (early_machine_is_sdm630()) {
 		dummy_socinfo.id = 318;
 		strlcpy(dummy_socinfo.build_id, "sdm630 - ",
+		sizeof(dummy_socinfo.build_id));
 	} else if (early_machine_is_sda660()) {
 		dummy_socinfo.id = 324;
 		strlcpy(dummy_socinfo.build_id, "sda660 - ",
