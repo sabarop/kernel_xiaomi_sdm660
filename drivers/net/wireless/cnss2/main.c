@@ -2622,6 +2622,16 @@ static void cnss_init_control_params(struct cnss_plat_data *plat_priv)
 	plat_priv->ctrl_params.time_sync_period = CNSS_TIME_SYNC_PERIOD_DEFAULT;
 }
 
+static void cnss_get_pm_domain_info(struct cnss_plat_data *plat_priv)
+{
+	struct device *dev = &plat_priv->plat_dev->dev;
+
+	plat_priv->use_pm_domain =
+		of_property_read_bool(dev->of_node, "use-pm-domain");
+
+	cnss_pr_dbg("use-pm-domain is %d\n", plat_priv->use_pm_domain);
+}
+
 static void cnss_get_wlaon_pwr_ctrl_info(struct cnss_plat_data *plat_priv)
 {
 	struct device *dev = &plat_priv->plat_dev->dev;
