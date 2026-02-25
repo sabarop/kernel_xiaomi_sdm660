@@ -2614,7 +2614,7 @@ static void __exit gtp_exit(void)
 	i2c_del_driver(&goodix_ts_driver);
 }
 
-module_init(gtp_init);
+device_initcall_sync(gtp_init);
 module_exit(gtp_exit);
 
 MODULE_DESCRIPTION("GT9 serials touch controller Driver");
