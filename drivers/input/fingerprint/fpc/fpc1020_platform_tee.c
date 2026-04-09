@@ -980,9 +980,6 @@ static int fpc1020_probe(struct platform_device *pdev)
 #ifdef CONFIG_MACH_XIAOMI_SDM660
 	size_t i;
 #endif
-#ifdef CONFIG_MACH_XIAOMI_CLOVER
-	int irqf = 0;
-#endif
 	struct device *platform_dev;
 	struct kobject *soc_kobj;
 	struct kernfs_node *devices_node, *soc_node;
