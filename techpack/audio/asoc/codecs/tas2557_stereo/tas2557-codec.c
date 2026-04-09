@@ -228,7 +228,7 @@ static int tas2557_codec_probe(struct snd_soc_component *pCodec)
 
 static void tas2557_codec_remove(struct snd_soc_component *pCodec)
 {
-	struct tas2557_priv* pTAS2557 = snd_soc_component_get_drvdata(pCodec);
+	/* Intentionally empty – no cleanup required */
 }
 
 static int tas2557_power_ctrl_get(struct snd_kcontrol *pKcontrol,
