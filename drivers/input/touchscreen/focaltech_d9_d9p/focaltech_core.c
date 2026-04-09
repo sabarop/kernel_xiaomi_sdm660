@@ -888,7 +888,6 @@ static void fts_report_event(struct fts_ts_data *data)
  *****************************************************************************/
 static irqreturn_t fts_ts_interrupt(int irq, void *data)
 {
-	int ret = 0;
 	struct fts_ts_data *ts_data = (struct fts_ts_data *)data;
 
 #if FTS_ESDCHECK_EN
