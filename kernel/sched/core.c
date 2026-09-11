@@ -1382,19 +1382,29 @@ unsigned int uclamp_task(struct task_struct *p)
 	unsigned long util;
 
 	util = task_util_est(p);
+#ifdef CONFIG_SCHED_TUNE
+	util += schedtune_task_margin(p);
+#endif
 	util = max(util, uclamp_eff_value(p, UCLAMP_MIN));
 	util = min(util, uclamp_eff_value(p, UCLAMP_MAX));
-
 	return util;
 }
 
 bool uclamp_boosted(struct task_struct *p)
 {
+#ifdef CONFIG_SCHED_TUNE
+	if (schedtune_task_boost(p) > 0)
+		return true;
+#endif
 	return uclamp_eff_value(p, UCLAMP_MIN) > 0;
 }
 
 bool uclamp_latency_sensitive(struct task_struct *p)
 {
+#ifdef CONFIG_SCHED_TUNE
+	if (schedtune_prefer_idle(p) != 0)
+		return true;
+#endif
 #ifdef CONFIG_UCLAMP_TASK_GROUP
 	struct cgroup_subsys_state *css = task_css(p, cpu_cgrp_id);
 	struct task_group *tg;
@@ -1402,12 +1412,12 @@ bool uclamp_latency_sensitive(struct task_struct *p)
 	if (!css)
 		return false;
 	tg = container_of(css, struct task_group, css);
-
 	return tg->latency_sensitive;
 #else
 	return false;
 #endif
 }
+
 #endif /* CONFIG_SMP */
 
 static void __init init_uclamp_rq(struct rq *rq)

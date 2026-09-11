@@ -3788,7 +3788,11 @@ unsigned long task_util_est(struct task_struct *p)
 #ifdef CONFIG_UCLAMP_TASK
 static inline unsigned long uclamp_task_util(struct task_struct *p)
 {
-	return clamp(task_util_est(p),
+	unsigned long util = task_util_est(p);
+#ifdef CONFIG_SCHED_TUNE
+	util += schedtune_task_margin(p);
+#endif
+	return clamp(util,
 		     uclamp_eff_value(p, UCLAMP_MIN),
 		     uclamp_eff_value(p, UCLAMP_MAX));
 }
