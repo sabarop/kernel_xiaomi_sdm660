@@ -1401,13 +1401,16 @@ bool uclamp_boosted(struct task_struct *p)
 
 bool uclamp_latency_sensitive(struct task_struct *p)
 {
+#ifdef CONFIG_UCLAMP_TASK_GROUP
+struct cgroup_subsys_state *css;
+struct task_group *tg;
+#endif
 #ifdef CONFIG_SCHED_TUNE
 	if (schedtune_prefer_idle(p) != 0)
 		return true;
 #endif
 #ifdef CONFIG_UCLAMP_TASK_GROUP
-	struct cgroup_subsys_state *css = task_css(p, cpu_cgrp_id);
-	struct task_group *tg;
+	css = task_css(p, cpu_cgrp_id);
 
 	if (!css)
 		return false;
