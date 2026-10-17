@@ -2472,6 +2472,8 @@
 		vdd_cx-supply = <&VDD_CX_LEVEL>;
 		vdd_cx_ao-supply = <&VDD_CX_LEVEL_AO>;
 		vdd_mm-supply = <&VDD_MMCX_LEVEL>;
+		ufs-supply = <&ufs_phy_gdsc>;
+		usb30-supply = <&usb30_prim_gdsc>;
 		#clock-cells = <1>;
 		#reset-cells = <1>;
 	};
@@ -2528,6 +2530,7 @@
 		reg-names = "cc_base";
 		vdd_cx-supply = <&VDD_CX_LEVEL>;
 		vdd_mx-supply = <&VDD_MX_LEVEL>;
+		gdsc_cx-supply = <&gpu_cx_gdsc>;
 		#clock-cells = <1>;
 		#reset-cells = <1>;
 	};
@@ -2590,6 +2593,9 @@
 		reg = <0x177004 0x4>;
 		regulator-name = "ufs_phy_gdsc";
 		qcom,retain-regs;
+		qcom,gds-timeout = <500>;
+		proxy-supply = <&ufs_phy_gdsc>;
+		qcom,proxy-consumer-enable;
 	};
 
 	usb30_prim_gdsc: qcom,gdsc@10f004 {
@@ -2597,6 +2603,8 @@
 		reg = <0x10f004 0x4>;
 		regulator-name = "usb30_prim_gdsc";
 		qcom,retain-regs;
+		proxy-supply = <&usb30_prim_gdsc>;
+		qcom,proxy-consumer-enable;
 	};
 
 	usb30_sec_gdsc: qcom,gdsc@110004 {
@@ -2782,6 +2790,8 @@
 		qcom,clk-dis-wait-val = <8>;
 		qcom,gds-timeout = <500>;
 		qcom,retain-regs;
+		proxy-supply = <&gpu_cx_gdsc>;
+		qcom,proxy-consumer-enable;
 	};
 
 	gpu_gx_domain_addr: syscon@3d91508 {
@@ -3018,6 +3028,29 @@
 			#size-cells = <0>;
 			qcom,can-sleep;
 		};
+	};
+
+	ufs_ice: ufsice@1d90000 {
+		compatible = "qcom,ice";
+		reg = <0x1d90000 0x8000>;
+		qcom,enable-ice-clk;
+		clock-names = "ufs_core_clk", "bus_clk",
+				"iface_clk", "ice_core_clk";
+		clocks = <&clock_gcc GCC_UFS_PHY_AXI_CLK>,
+			<&clock_gcc GCC_UFS_1X_CLKREF_EN>,
+			<&clock_gcc GCC_UFS_PHY_AHB_CLK>,
+			<&clock_gcc GCC_UFS_PHY_ICE_CORE_CLK>;
+		qcom,op-freq-hz = <0>, <0>, <0>, <300000000>;
+		vdd-hba-supply = <&ufs_phy_gdsc>;
+		qcom,msm-bus,name = "ufs_ice_noc";
+		qcom,msm-bus,num-cases = <2>;
+		qcom,msm-bus,num-paths = <1>;
+		qcom,msm-bus,vectors-KBps =
+				<1 650 0 0>,    /* No vote */
+				<1 650 1000 0>; /* Max. bandwidth */
+		qcom,bus-vector-names = "MIN",
+					"MAX";
+		qcom,instance-type = "ufs";
 	};
 
 	ufsphy_mem: ufsphy_mem@1d87000 {
