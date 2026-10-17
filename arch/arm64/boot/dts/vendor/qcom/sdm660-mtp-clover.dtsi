@@ -685,7 +685,7 @@
 		fpc,gpio_irq = <&tlmm 71 0>;
 		clock-names = "iface_clk", "core_clk";
 		clocks = <&clock_gcc GCC_BLSP2_AHB_CLK>,
-			<&clock_gcc GCC_BLSP2_QUP3_SPI_APPS_CLK>;
+			<&clock_gcc GCC_BLSP2_QUP1_SPI_APPS_CLK>;
 		pinctrl-names = "fpc1020_avdd_active",
 				"fpc1020_avdd_suspend",
 				"fpc1020_vddio_active",
@@ -883,12 +883,12 @@
 
 	fpc_spi_active: fpc_spi_active {
 		mux {
-			pins = "gpio24", "gpio25", "gpio26", "gpio27";
-			function = "blsp_spi7";
+			pins = "gpio16", "gpio17", "gpio18", "gpio19";
+			function = "blsp_spi5";
 		};
 
 		config {
-			pins = "gpio24", "gpio25", "gpio26", "gpio27";
+			pins = "gpio16", "gpio17", "gpio18", "gpio19";
 			drive-strength = <2>;
 			bias-disable;
 		};
